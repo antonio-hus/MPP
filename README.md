@@ -1,6 +1,9 @@
 # MPP
 Main Entity: Booking
 
+## Figma UI Sketch
+https://www.figma.com/design/nBkifoFvGuNL6mY4F2RDIk/MPP---Bookings?m=auto&t=nckyVNqqyoI2VpAr-6
+
 ## Booking Model Schema
 
 The `Booking` model represents reservations that impact available slots.
