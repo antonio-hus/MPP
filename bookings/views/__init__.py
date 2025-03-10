@@ -1,0 +1,1 @@
+from .bookings import booking_detail, booking_list

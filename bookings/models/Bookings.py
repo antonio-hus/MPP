@@ -19,14 +19,15 @@ class Booking(models.Model):
         COMPLETED = 'COMPLETED', 'Completed'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    customer_name = models.CharField(max_length=127)
-    customer_email = models.CharField(max_length=127)
-    customer_phone = models.CharField(max_length=20)
-    datetime = models.DateTimeField()
+    customerName = models.CharField(max_length=127, db_column="customer_name")
+    customerEmail = models.CharField(max_length=127, db_column="customer_email")
+    customerPhone = models.CharField(max_length=20, db_column="customer_phone")
+    startDate = models.DateField(db_column="start_date")
+    endDate = models.DateField(db_column="end_date")
     state = models.CharField(
         max_length=10,
         choices=BookingState.choices,
         default=BookingState.PENDING
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    completed_at = models.DateTimeField(null=True, blank=True)
+    createdAt = models.DateTimeField(auto_now_add=True, db_column="created_at")
+    completedAt = models.DateTimeField(null=True, blank=True, db_column="completed_at")
