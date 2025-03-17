@@ -92,11 +92,4 @@ Alternatively, clicking the "Cancel" button returns the user to the bookings lis
 Delete Booking:  
   
 Clicking the "Delete" button triggers a modal window that confirms the deletion action.  
-The user is prompted to confirm the deletion, ensuring that accidental deletions are avoided.  
-  
-Extended Features  
-Backend Integration:  
-Data is fetched and manipulated through REST API calls to the Django backend, facilitating full CRUD operations.  
-  
-Full CRUD Operations:  
-The system supports creating, reading, updating, and deleting booking entities, ensuring a complete end-to-end solution.
+The user is prompted to confirm the deletion, ensuring that accidental deletions are avoided.

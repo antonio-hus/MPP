@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { fetchBookingById, updateBookingApi, deleteBookingApi } from "@/utils/api";
+import { fetchBookingById, updateBookingApi, deleteBookingApi } from "@/utils/mocks/api_mock";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Header from "@/components/Header";
