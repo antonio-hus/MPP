@@ -93,3 +93,14 @@ Delete Booking:
   
 Clicking the "Delete" button triggers a modal window that confirms the deletion action.  
 The user is prompted to confirm the deletion, ensuring that accidental deletions are avoided.
+
+### Assignment 4: Gold Tier
+
+#### Overview:
+- Bronze Tier - Achieved from previous assignment (functionalities explained above)  
+- Silver Tier 
+  - Full Jest Test Coverage for the CRUD API Mock Calls (using in-memory data). Run the tests by right-clicking and pressing Run on the @/utils/mocks/api_mock.test.ts (JetBrains IDE).
+  - Statistics Shown on Booking Details Card - Background Color of the Booking Banner and the Booking Badge change based on the Booking State (PENDING, CANCELLED, CONFIRMED, COMPLETED).
+- Gold Tier
+  - Async Chart Data and Real-Time Updates - we use the useEffect Hook, to fetch data real-time every 5 seconds and reload the chart data in an asynchronous manner. There are 3 charts: Pie Chart: Booking State Distribution, Bar & Line Charts: Daily Booking Counts. To inspect them toggle in the main booking list to metrics view.
+  - Pagination - A page displays at most 5 Bookings. If there exist more than 5 bookings in the query result set, at the bottom of the page will be a page navigator. On reload page is set back to first.
