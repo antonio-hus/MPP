@@ -142,3 +142,104 @@ export async function searchBookings(filters: {
     return true
   })
 }
+
+export async function generateMockBookings(): Promise<Booking[]> {
+  const mockBookings: Booking[] = [
+    {
+      id: "1",
+      customerName: "Andrei Popescu",
+      customerEmail: "andrei.popescu@exemplu.ro",
+      customerPhone: "+40 712345678",
+      startDate: "2025-04-05",
+      endDate: "2025-04-10",
+      state: "CONFIRMED"
+    },
+    {
+      id: "2",
+      customerName: "Elena Ionescu",
+      customerEmail: "elena.ionescu@exemplu.ro",
+      customerPhone: "+40 723456789",
+      startDate: "2025-04-07",
+      endDate: "2025-04-12",
+      state: "PENDING"
+    },
+    {
+      id: "3",
+      customerName: "Mihai Georgescu",
+      customerEmail: "mihai.georgescu@exemplu.ro",
+      customerPhone: "+40 734567890",
+      startDate: "2025-04-10",
+      endDate: "2025-04-15",
+      state: "CANCELLED"
+    },
+    {
+      id: "4",
+      customerName: "Ioana Marinescu",
+      customerEmail: "ioana.marinescu@exemplu.ro",
+      customerPhone: "+40 745678901",
+      startDate: "2025-04-12",
+      endDate: "2025-04-17",
+      state: "CONFIRMED"
+    },
+    {
+      id: "5",
+      customerName: "Cristian Dumitru",
+      customerEmail: "cristian.dumitru@exemplu.ro",
+      customerPhone: "+40 756789012",
+      startDate: "2025-04-15",
+      endDate: "2025-04-20",
+      state: "PENDING"
+    },
+    {
+      id: "6",
+      customerName: "Gabriela Stan",
+      customerEmail: "gabriela.stan@exemplu.ro",
+      customerPhone: "+40 767890123",
+      startDate: "2025-04-18",
+      endDate: "2025-04-23",
+      state: "CONFIRMED"
+    },
+    {
+      id: "7",
+      customerName: "Radu Voicu",
+      customerEmail: "radu.voicu@exemplu.ro",
+      customerPhone: "+40 778901234",
+      startDate: "2025-04-20",
+      endDate: "2025-04-25",
+      state: "CANCELLED"
+    },
+    {
+      id: "8",
+      customerName: "Anca Iliescu",
+      customerEmail: "anca.iliescu@exemplu.ro",
+      customerPhone: "+40 789012345",
+      startDate: "2025-04-22",
+      endDate: "2025-04-27",
+      state: "CONFIRMED"
+    },
+    {
+      id: "9",
+      customerName: "Florin Bălan",
+      customerEmail: "florin.balan@exemplu.ro",
+      customerPhone: "+40 790123456",
+      startDate: "2025-04-25",
+      endDate: "2025-04-30",
+      state: "PENDING"
+    },
+    {
+      id: "10",
+      customerName: "Diana Pavel",
+      customerEmail: "diana.pavel@exemplu.ro",
+      customerPhone: "+40 701234567",
+      startDate: "2025-04-28",
+      endDate: "2025-05-03",
+      state: "CONFIRMED"
+    }
+  ];
+
+  for (const booking of mockBookings) {
+    await createBookingApi(booking);
+  }
+
+  return mockBookings;
+}

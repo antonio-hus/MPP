@@ -3,12 +3,12 @@
 /////////////////////
 // IMPORTS SECTION //
 /////////////////////
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { fetchBookings, searchBookings } from "@/utils/mocks/api_mock"
+import { fetchBookings, searchBookings } from "@/utils/api"
 import type { Booking } from "@/utils/types"
 import { AlertCircle, ChevronDown, ChevronUp, Loader2, Search } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -16,8 +16,19 @@ import Header from "@/components/Header"
 import Footer from "@/components/Footer"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Pie, Bar, Line } from "react-chartjs-2"
-import {Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Title, Tooltip, Legend,} from "chart.js"
-
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js"
+import NetworkStatusNotificationBar from "@/components/StatusNotificationBar"
 
 ///////////////////
 // BOOKING CHART //
@@ -31,8 +42,9 @@ function BookingCharts() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const data = await fetchBookings()
-        setBookings(data)
+        // For charts, we assume a full fetch (or a separate endpoint) is acceptable
+        const data = await fetchBookings(0, 1000)
+        setBookings(data.results)
       } catch (err) {
         console.error("Error fetching chart data", err)
       }
@@ -44,13 +56,11 @@ function BookingCharts() {
   }, [])
 
   // Pie Chart: Booking State Distribution
-  const stateCounts = bookings.reduce(
-    (acc, b) => {
-      acc[b.state] = (acc[b.state] || 0) + 1
-      return acc
-    },
-    {} as { [key: string]: number }
-  )
+  const stateCounts = bookings.reduce((acc, b) => {
+    acc[b.state] = (acc[b.state] || 0) + 1
+    return acc
+  }, {} as { [key: string]: number })
+
   const pieData = {
     labels: Object.keys(stateCounts),
     datasets: [
@@ -61,8 +71,7 @@ function BookingCharts() {
     ],
   }
 
-  // Bar & Line Chart: Daily Booking Counts
-  // Group bookings by startDate
+  // Bar & Line Chart: Daily Booking Counts (grouped by startDate)
   const dailyCounts: { [key: string]: number } = {}
   bookings.forEach((b) => {
     dailyCounts[b.startDate] = (dailyCounts[b.startDate] || 0) + 1
@@ -127,24 +136,27 @@ function BookingCharts() {
   )
 }
 
-
 ///////////////////
 // BOOKINGS PAGE //
 ///////////////////
-
 export default function BookingsPage() {
-
-  // CONSTANTS SECTION //
-  // State for view toggle: "list" or "metrics"
+  // View toggle: "list" or "metrics"
   const [viewMode, setViewMode] = useState<"list" | "metrics">("list")
 
-  // State for bookings and search/filter
+  // State for bookings, search/filter, errors, etc.
   const [bookings, setBookings] = useState<Booking[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSearching, setIsSearching] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false)
-  const [filters, setFilters] = useState({name: "", email: "", phone: "", start_date: "", end_date: "", state: "",})
+  const [filters, setFilters] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    start_date: "",
+    end_date: "",
+    state: "",
+  })
 
   // Statistics for key booking states
   const totalBookingsCount = bookings.length
@@ -153,41 +165,76 @@ export default function BookingsPage() {
   const cancelledCount = bookings.filter((b) => b.state === "CANCELLED").length
   const completedCount = bookings.filter((b) => b.state === "COMPLETED").length
 
-  // Pagination state for list view
-  const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 5
-  const totalPages = Math.ceil(bookings.length / itemsPerPage)
-  const currentBookings = bookings.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  )
+  // Infinite scroll pagination state
+  const [offset, setOffset] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
+  const loader = useRef<HTMLDivElement>(null)
+  const ITEMS_LIMIT = 10
 
-  // HOOKS SECTION //
-  useEffect(() => {
-    const loadBookings = async () => {
-      try {
-        const data = await fetchBookings()
-        setBookings(data)
-        setCurrentPage(1)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load bookings")
-      } finally {
-        setIsLoading(false)
+  // Initial load & subsequent loading for infinite scroll
+  const loadBookings = async (reset = false) => {
+    try {
+      setIsLoading(true)
+      // When resetting (e.g., after search), start from the beginning.
+      const currentOffset = reset ? 0 : offset
+      const data = await fetchBookings(currentOffset, ITEMS_LIMIT)
+      if (reset) {
+        setBookings(data.results)
+      } else {
+        setBookings((prev) => [...prev, ...data.results])
       }
+      if (data.next_offset !== null) {
+        setOffset(data.next_offset)
+        setHasMore(true)
+      } else {
+        setHasMore(false)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load bookings")
+    } finally {
+      setIsLoading(false)
     }
-    loadBookings()
+  }
+
+  // Load initial bookings on mount
+  useEffect(() => {
+    loadBookings(true)
+    // Reset offset when component mounts
+    setOffset(0)
   }, [])
 
+  // Intersection Observer: load more when the loader element becomes visible
+  useEffect(() => {
+    if (!hasMore || isLoading) return
 
-  // HANDLERS SECTION //
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadBookings()
+        }
+      },
+      { threshold: 1.0 }
+    )
+    if (loader.current) {
+      observer.observe(loader.current)
+    }
+    return () => {
+      if (loader.current) {
+        observer.unobserve(loader.current)
+      }
+    }
+  }, [hasMore, isLoading, offset])
+
+  // Search handler (resets bookings and pagination)
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSearching(true)
     setError(null)
     try {
       const results = await searchBookings(filters)
+      // If search returns all results (without pagination), replace the bookings list.
       setBookings(results)
-      setCurrentPage(1) // Reset to first page when search results are updated
+      setHasMore(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Search failed")
     } finally {
@@ -196,10 +243,10 @@ export default function BookingsPage() {
   }
 
   const handleReset = () => {
-    setFilters({name: "", email: "", phone: "", start_date: "", end_date: "", state: "",})
+    setFilters({ name: "", email: "", phone: "", start_date: "", end_date: "", state: "" })
   }
 
-  // HELPERS SECTION //
+  // Helpers for booking state display
   const getStateBgColor = (state: string): string => {
     switch (state) {
       case "PENDING":
@@ -230,10 +277,8 @@ export default function BookingsPage() {
     }
   }
 
-
-  // JSX SECTION //
-  /// PLACEHOLDER CONTENT ///
-  if (isLoading) {
+  // While loading the initial data
+  if (isLoading && bookings.length === 0) {
     return (
       <div className="container mx-auto py-8 px-4 flex justify-center">
         <div className="flex items-center space-x-2">
@@ -244,9 +289,9 @@ export default function BookingsPage() {
     )
   }
 
-  /// ACTUAL CONTENT ///
   return (
     <div className="flex flex-col min-h-screen">
+      <NetworkStatusNotificationBar />
       <Header />
       <div className="flex-col flex-1 container mx-auto py-8 px-4">
         {/* View Toggle Switch */}
@@ -263,7 +308,6 @@ export default function BookingsPage() {
           >
             Metrics
           </Button>
-
         </div>
 
         {error && (
@@ -363,7 +407,6 @@ export default function BookingsPage() {
                             </span>
                           </Button>
                         </CollapsibleTrigger>
-
                         {showAdvancedSearch && (
                           <Button
                             type="button"
@@ -394,7 +437,6 @@ export default function BookingsPage() {
                               disabled={isSearching}
                             />
                           </div>
-
                           <div>
                             <label htmlFor="phone" className="text-sm font-medium block mb-1">
                               Phone
@@ -410,7 +452,6 @@ export default function BookingsPage() {
                               disabled={isSearching}
                             />
                           </div>
-
                           <div>
                             <label htmlFor="state" className="text-sm font-medium block mb-1">
                               Booking State
@@ -426,7 +467,6 @@ export default function BookingsPage() {
                               disabled={isSearching}
                             />
                           </div>
-
                           <div>
                             <label htmlFor="start_date" className="text-sm font-medium block mb-1">
                               Start Date
@@ -441,7 +481,6 @@ export default function BookingsPage() {
                               disabled={isSearching}
                             />
                           </div>
-
                           <div>
                             <label htmlFor="end_date" className="text-sm font-medium block mb-1">
                               End Date
@@ -466,12 +505,12 @@ export default function BookingsPage() {
 
             {/* Bookings List */}
             <div className="space-y-4">
-              {currentBookings.length === 0 ? (
+              {bookings.length === 0 && !isLoading ? (
                 <p className="text-center py-8 text-muted-foreground">
                   No bookings found.
                 </p>
               ) : (
-                currentBookings.map((booking) => (
+                bookings.map((booking) => (
                   <Card key={booking.id} className="overflow-hidden">
                     <CardHeader className={`${getStateBgColor(booking.state)} py-3 px-4`}>
                       <CardTitle className="text-lg flex justify-between items-center">
@@ -512,26 +551,10 @@ export default function BookingsPage() {
               )}
             </div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="flex justify-center items-center mt-6 space-x-4">
-                <Button
-                  variant="outline"
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(currentPage - 1)}
-                >
-                  Previous
-                </Button>
-                <span>
-                  Page {currentPage} of {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(currentPage + 1)}
-                >
-                  Next
-                </Button>
+            {/* Loader for infinite scroll */}
+            {hasMore && (
+              <div ref={loader} className="flex justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             )}
           </>

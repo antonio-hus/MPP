@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import NetworkStatusNotificationBar from "@/components/StatusNotificationBar";
 
 
 //////////////////////////
@@ -15,6 +16,7 @@ export default function Home() {
   // JSX SECTION //
   return (
     <div className="flex flex-col min-h-screen">
+      <NetworkStatusNotificationBar/>
       <Header />
       <main className="flex-1 container mx-auto flex flex-col items-center justify-center text-center p-6">
         <h1 className="text-3xl font-bold mb-6">Booking Management System</h1>
@@ -32,6 +34,11 @@ export default function Home() {
           <Link href="/bookings" className="w-full">
             <Button className="w-full h-24 text-lg bg-[#2196F3] hover:bg-[#1976D2]">
               Manage Bookings
+            </Button>
+          </Link>
+          <Link href="/files" className="w-full">
+            <Button className="w-full h-24 text-lg bg-[#2196F3] hover:bg-[#1976D2]">
+              Manage Files
             </Button>
           </Link>
         </div>

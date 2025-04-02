@@ -33,6 +33,11 @@ export default function Header() {
                 Bookings
               </Link>
             </li>
+            <li>
+              <Link href="/files" className="hover:underline">
+                Files
+              </Link>
+            </li>
           </ul>
         </nav>
       </div>

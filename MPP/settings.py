@@ -1,6 +1,7 @@
 ###################
 # IMPORTS SECTION #
 ###################
+import os
 from pathlib import Path
 
 ##################
@@ -27,7 +28,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
-    "bookings"
+    "bookings",
+    "channels"
 ]
 
 ##############
@@ -44,11 +46,23 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-#################
-# URLS AND WSGI #
-#################
+##########################
+# URLS AND WSGI AND ASGI #
+##########################
 ROOT_URLCONF = "MPP.urls"
 WSGI_APPLICATION = "MPP.wsgi.application"
+ASGI_APPLICATION = "MPP.asgi.application"
+
+
+#################
+#   WEBSOCKET   #
+#################
+WS_FLAG = False
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
 
 #############
 # TEMPLATES #
@@ -112,6 +126,8 @@ USE_TZ = True
 # STATIC FILES #
 ################
 STATIC_URL = "static/"
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = '/media/'
 
 ##########################
 # CORS AND CSRF SETTINGS #

@@ -9,11 +9,12 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { createBookingApi } from "@/utils/mocks/api_mock"
+import { createBookingApi } from "@/utils/api"
 import { AlertCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
+import NetworkStatusNotificationBar from "@/components/StatusNotificationBar";
 
 
 //////////////////////////
@@ -67,6 +68,7 @@ export default function CreateBookingPage() {
   // JSX SECTION//
   return (
     <div className="flex flex-col min-h-screen">
+      <NetworkStatusNotificationBar/>
       <Header />
       <div className="flex-1 container mx-auto py-8 px-4">
         <div className="max-w-md mx-auto bg-white rounded-lg overflow-hidden shadow-lg">

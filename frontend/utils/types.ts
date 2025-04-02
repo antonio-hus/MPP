@@ -15,4 +15,3 @@ export type Booking = {
   endDate: string
   state: string
 }
-

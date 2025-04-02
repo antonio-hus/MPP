@@ -17,12 +17,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { fetchBookingById, updateBookingApi, deleteBookingApi } from "@/utils/mocks/api_mock";
+import { fetchBookingById, updateBookingApi, deleteBookingApi } from "@/utils/api";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import type { Booking } from "@/utils/types";
+import NetworkStatusNotificationBar from "@/components/StatusNotificationBar";
 
 
 //////////////////////////
@@ -151,6 +152,7 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
   /// ACTUAL CONTENT ///
   return (
     <div>
+      <NetworkStatusNotificationBar/>
       <Header />
       <div className="container mx-auto py-8 px-4">
         <div className="flex justify-center mb-4">
