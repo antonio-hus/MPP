@@ -5,20 +5,21 @@
 /////////////////////
 import { useState, useEffect } from "react";
 import { WifiOff, ServerOff } from "lucide-react";
-import { checkServerStatus } from "@/utils/api";
+import { syncLocalOperations } from "@/utils/api/bookings-api";
+import { checkServerStatus } from "@/utils/api/health-reporting-api";
+
 
 //////////////////////////
 // COMPONENT DEFINITION //
 //////////////////////////
 export default function NetworkStatusNotificationBar() {
-  const [networkDown, setNetworkDown] = useState<boolean>(false);
-  const [serverDown, setServerDown] = useState<boolean>(false);
+  const [networkDown, setNetworkDown] = useState(false);
+  const [serverDown, setServerDown] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
-
     // Check direct network status on mount
     const online = navigator.onLine;
-    console.log(online)
     setNetworkDown(!online);
 
     // If network is online, perform a server health check
@@ -29,17 +30,41 @@ export default function NetworkStatusNotificationBar() {
     // Listen for network status changes
     const handleNetworkChange = (event: CustomEvent) => {
       const isNetworkDown = event.detail.networkDown;
+      const wasNetworkDown = networkDown;
       setNetworkDown(isNetworkDown);
 
       // If network becomes online, immediately re-check server status
-      if (!isNetworkDown) {
+      // and sync local operations if we were previously offline
+      if (!isNetworkDown && wasNetworkDown) {
         checkServerStatus();
+        handleSync();
       }
     };
 
     // Listen for server status changes
     const handleServerChange = (event: CustomEvent) => {
-      setServerDown(event.detail.serverDown);
+      const isServerDown = event.detail.serverDown;
+      const wasServerDown = serverDown;
+      setServerDown(isServerDown);
+
+      // If server becomes online and was previously down, sync local operations
+      if (!isServerDown && wasServerDown) {
+        handleSync();
+      }
+    };
+
+    // Function to handle syncing local operations
+    const handleSync = async () => {
+      if (!networkDown && !serverDown) {
+        setSyncing(true);
+        try {
+          await syncLocalOperations();
+        } catch (error) {
+          console.error("Failed to sync local operations:", error);
+        } finally {
+          setSyncing(false);
+        }
+      }
     };
 
     window.addEventListener("networkStatusChange", handleNetworkChange as EventListener);
@@ -49,22 +74,24 @@ export default function NetworkStatusNotificationBar() {
       window.removeEventListener("networkStatusChange", handleNetworkChange as EventListener);
       window.removeEventListener("serverStatusChange", handleServerChange as EventListener);
     };
-  }, []);
+  }, [networkDown, serverDown]);
 
-  if (!networkDown && !serverDown) return null;
+  if (!networkDown && !serverDown && !syncing) return null;
 
   return (
-    <div className="sticky top-0 z-50 w-full bg-yellow-300 p-2 flex items-center justify-center">
+    <div className="fixed bottom-0 left-0 right-0 p-2 bg-amber-100 border-t border-amber-300 text-amber-800 flex items-center justify-center space-x-2">
       {networkDown ? (
         <>
-          <WifiOff className="mr-2 text-xl" />
+          <WifiOff size={16} />
           <span>Network is down. Operating in local cache mode.</span>
         </>
       ) : serverDown ? (
         <>
-          <ServerOff className="mr-2 text-xl" />
+          <ServerOff size={16} />
           <span>Server is down. Operating in local cache mode.</span>
         </>
+      ) : syncing ? (
+        <span>Syncing local changes with server...</span>
       ) : null}
     </div>
   );

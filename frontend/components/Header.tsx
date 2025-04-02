@@ -34,6 +34,11 @@ export default function Header() {
               </Link>
             </li>
             <li>
+              <Link href="/bookings/analytics" className="hover:underline">
+                Analytics
+              </Link>
+            </li>
+            <li>
               <Link href="/files" className="hover:underline">
                 Files
               </Link>

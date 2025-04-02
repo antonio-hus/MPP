@@ -1,7 +1,15 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
-import type { Booking } from "./types";
 
+/////////////////////
+// IMPORTS SECTION //
+/////////////////////
+import { useEffect, useState, useCallback } from "react";
+import type { Booking } from "./../types/bookings-type"
+
+
+///////////////////////
+// WEBSOCKET SECTION //
+///////////////////////
 function useBookingUpdates(onBookingUpdate: (booking: Booking) => void) {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);

@@ -15,6 +15,7 @@ urlpatterns = [
     path('bookings/<uuid:pk>/', views.booking_detail, name='booking_detail'),
 
     # Files related URL Paths
+    path('files/', views.list_files, name='list_files'),
     path('upload/<str:filename>/', views.upload_file, name='file_upload'),
     path('download/<str:filename>/', views.download_file, name='file_download'),
 ]

@@ -1,18 +1,21 @@
 /////////////////////
 // IMPORTS SECTION //
 /////////////////////
-import type { Booking } from "./types"
+import type { Booking } from "./../types/bookings-type"
+import { updateServerStatus, updateNetworkStatus, isOnline } from "./health-reporting-api"
+
 
 ///////////////////////
 // CONSTANTS SECTION //
 ///////////////////////
 const API_URL = "http://localhost:8000"
 
+
 //////////////////////////////
 // IN‑MEMORY STORAGE SECTION //
 //////////////////////////////
 // Local bookings cache (for offline support)
-export let bookings: Booking[] = []
+let bookings: Booking[] = []
 
 // In‑memory queue for pending CRUD operations
 interface CreateOp {
@@ -32,35 +35,6 @@ interface DeleteOp {
 type PendingOperation = CreateOp | UpdateOp | DeleteOp
 let pendingOps: PendingOperation[] = []
 
-//////////////////////////////
-// NETWORK/ SERVER STATUS  //
-//////////////////////////////
-export interface Status {
-  networkDown: boolean
-  serverDown: boolean
-}
-
-// Global status object the UI can use to display messages
-export let status: Status = {
-  networkDown: false,
-  serverDown: false,
-}
-
-// Helper function to update network status
-function updateNetworkStatus(): void {
-  status.networkDown = !navigator.onLine
-  window.dispatchEvent(
-    new CustomEvent("networkStatusChange", { detail: { networkDown: status.networkDown } })
-  )
-}
-
-// Helper function to update server status
-function updateServerStatus(isDown: boolean): void {
-  status.serverDown = isDown
-  window.dispatchEvent(
-    new CustomEvent("serverStatusChange", { detail: { serverDown: status.serverDown } })
-  )
-}
 
 //////////////////////////////
 // HELPER FUNCTIONS SECTION //
@@ -70,17 +44,16 @@ function generateUniqueId(): string {
   return Math.random().toString(36).substr(2, 9)
 }
 
-// Basic online check using navigator.onLine
-function isOnline(): boolean {
-  return window.navigator.onLine
-}
 
 // Sync pending operations when back online
 export async function syncLocalOperations(): Promise<void> {
   if (!isOnline() || pendingOps.length === 0) return
 
-  // Process each pending op sequentially.
+  // Make a copy of all pending operations
   const opsToProcess = [...pendingOps]
+  // Clear or keep track of successfully processed operations
+  const successfulOps = new Set()
+
   for (const op of opsToProcess) {
     try {
       if (op.type === "create") {
@@ -100,8 +73,8 @@ export async function syncLocalOperations(): Promise<void> {
         const created: Booking = await response.json()
         // Replace temporary booking in local cache with the created one
         bookings = bookings.map(b => (b.id === op.tempId ? created : b))
-        // Remove the processed op from the queue
-        pendingOps = pendingOps.filter(p => p !== op)
+        // Mark this operation as successfully processed
+        successfulOps.add(op)
 
       } else if (op.type === "update") {
         const response = await fetch(`${API_URL}/bookings/${op.id}/`, {
@@ -119,7 +92,7 @@ export async function syncLocalOperations(): Promise<void> {
         const updated: Booking = await response.json()
         // Update local cache with updated booking
         bookings = bookings.map(b => (b.id === op.id ? updated : b))
-        pendingOps = pendingOps.filter(p => p !== op)
+        successfulOps.add(op)
 
       } else if (op.type === "delete") {
         const response = await fetch(`${API_URL}/bookings/${op.id}/`, {
@@ -132,58 +105,22 @@ export async function syncLocalOperations(): Promise<void> {
 
         // Remove from local cache
         bookings = bookings.filter(b => b.id !== op.id)
-        pendingOps = pendingOps.filter(p => p !== op)
+        successfulOps.add(op)
       }
     } catch (error) {
       console.log("Sync operation failed:", error)
       updateServerStatus(true)
     }
   }
+
+  // Only after processing all operations, remove the successful ones from pendingOps
+  pendingOps = pendingOps.filter(op => !successfulOps.has(op))
 }
 
-// Listen for the online event to trigger sync and update status
-if (typeof window !== "undefined") {
-  window.addEventListener("online", () => {
-    updateNetworkStatus()
-    updateServerStatus(false)
-    console.log("Network restored, syncing pending operations...")
-    syncLocalOperations()
-  })
-  window.addEventListener("offline", updateNetworkStatus)
-}
-
-//////////////////////////////
-// SERVER HEALTH CHECK CODE //
-//////////////////////////////
-// A helper function to ping the server.
-export function checkServerStatus() {
-  fetch(`${API_URL}/bookings/`, { method: "HEAD" })
-    .then(response => {
-      if (response.ok) {
-        updateServerStatus(false)
-      } else {
-        updateServerStatus(true)
-      }
-    })
-    .catch(error => {
-      console.log("Server health check failed:", error)
-      updateServerStatus(true)
-    })
-}
-
-// Periodically check server status every 5 seconds if online
-if (typeof window !== "undefined") {
-  setInterval(() => {
-    if (isOnline()) {
-      checkServerStatus()
-    }
-  }, 5000)
-}
 
 ///////////////////////
 // API CALLS SECTION //
 ///////////////////////
-
 // Fetch all bookings
 export async function fetchBookings(offset: number = 0, limit: number = 10): Promise<{ count: number; results: Booking[]; next_offset: number | null }> {
   if (isOnline()) {
@@ -369,60 +306,6 @@ export async function deleteBookingApi(id: string): Promise<void> {
   pendingOps.push({ type: "delete", id })
 }
 
-// File upload function
-export async function uploadFile(filename: string, fileData: File): Promise<string> {
-  if (!isOnline()) {
-    updateNetworkStatus();
-    throw new Error("Cannot upload files while offline");
-  }
-
-  try {
-    const formData = new FormData();
-    formData.append('file', fileData);
-
-    const response = await fetch(`${API_URL}/upload/${filename}/`, {
-      method: 'POST',
-      body: formData
-    });
-
-    if (!response.ok) {
-      updateServerStatus(true);
-      throw new Error(`Error uploading file: ${response.statusText}`);
-    }
-
-    updateServerStatus(false);
-    const data = await response.json();
-    return data.url || data.path || filename;
-  } catch (error) {
-    console.log("File upload failed:", error);
-    updateServerStatus(true);
-    throw error;
-  }
-}
-
-// File download function
-export async function downloadFile(filename: string): Promise<Blob> {
-  if (!isOnline()) {
-    updateNetworkStatus();
-    throw new Error("Cannot download files while offline");
-  }
-
-  try {
-    const response = await fetch(`${API_URL}/download/${filename}/`);
-
-    if (!response.ok) {
-      updateServerStatus(true);
-      throw new Error(`Error downloading file: ${response.statusText}`);
-    }
-
-    updateServerStatus(false);
-    return await response.blob();
-  } catch (error) {
-    console.log("File download failed:", error);
-    updateServerStatus(true);
-    throw error;
-  }
-}
 
 // Search bookings with proper backend filtering
 export async function searchBookings(filters: {
@@ -455,9 +338,6 @@ export async function searchBookings(filters: {
 
       updateServerStatus(false);
       const data = await response.json();
-
-      // Update local cache with search results
-      bookings = data.results;
 
       return data.results;
     } catch (error) {

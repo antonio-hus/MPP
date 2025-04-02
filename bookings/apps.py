@@ -34,10 +34,6 @@ class BookingsConfig(AppConfig):
         from bookings.models import Booking
         from bookings.serializers import BookingSerializer
 
-        # Delete all bookings with auto-generated email
-        deleted_count, _ = Booking.objects.filter(customerEmail="auto@example.com").delete()
-        print(f"Cleaned up {deleted_count} auto-generated bookings")
-
         channel_layer = get_channel_layer()
         while True:
             # Wait for a while before generating a new booking.

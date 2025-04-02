@@ -104,3 +104,27 @@ The user is prompted to confirm the deletion, ensuring that accidental deletions
 - Gold Tier
   - Async Chart Data and Real-Time Updates - we use the useEffect Hook, to fetch data real-time every 5 seconds and reload the chart data in an asynchronous manner. There are 3 charts: Pie Chart: Booking State Distribution, Bar & Line Charts: Daily Booking Counts. To inspect them toggle in the main booking list to metrics view.
   - Pagination - A page displays at most 5 Bookings. If there exist more than 5 bookings in the query result set, at the bottom of the page will be a page navigator. On reload page is set back to first.
+
+### Assignment 4: Gold Tier
+
+#### Overview
+- Bronze Tier
+  - Run Backend from main folder (MPP) using   ```python manage.py runserver```  
+  - Run Frontend from frontend folder (MPP/frontend) using ```npm run dev```
+  - Create / Edit / Delete / Get Bookings and watch the terminal to see requests & responses
+  - Unit Tests: Run from main folder (MPP) using ```python manage.py test --verbosity=2```
+  - Server Side Validation can be seen in the pages for creating bookings and edit bookings
+- Silver Tier
+  - Disconnect from All Wi-fi and Bluetooth connections to view offline mode
+  - Stop running Backend by using Ctrl+C in Backend terminal to view server offline mode
+  - The app will still be usable from the frontend in cache mode. Upon restarting the server all changes will be synced
+  - Endless Scrolling: On the bookings page scroll down and notice that every 10 bookings a hot-reload is performed!
+- Gold Tier
+  - Async Chart Data via WebSocket
+    - Go to MPP>MPP>settings.py and set WS_FLAG to True to activate the WebSocket on the next run of the Backend
+    - Once the app starts a new thread is created (view apps.py in bookings) which generates new bookings every 2 seconds.
+    - The WebSocket methods are defined in consumer.py and implement the Django 'channels' api for websockets.
+    - In the frontend notice the incoming data in the list and in the charts in real time
+  - File Uploads
+    - Go to /files route in the frontend and upload / download server media.
+    - In the backend media is saved under MPP/media/uploads.
