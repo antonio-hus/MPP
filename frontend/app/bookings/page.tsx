@@ -24,7 +24,7 @@ import useBookingUpdates from "@/utils/sockets/web-socket";
 //////////////////////////
 export default function BookingsOverview() {
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
@@ -43,16 +43,39 @@ export default function BookingsOverview() {
   const [hasMore, setHasMore] = useState(true);
   const loader = useRef<HTMLDivElement>(null);
   const ITEMS_LIMIT = 10;
+  const initialLoadDone = useRef(false);
+
+  // Stable callback for WebSocket updates
+  const bookingUpdateHandler = useCallback((newBooking: Booking) => {
+    setBookings((prevBookings) => {
+      // Check if the booking already exists
+      const exists = prevBookings.find((b) => b.id === newBooking.id);
+      if (exists) {
+        // Update the existing booking
+        return prevBookings.map((b) => (b.id === newBooking.id ? newBooking : b));
+      }
+      // Add the new booking to the beginning of the list
+      return [newBooking, ...prevBookings];
+    });
+  }, []);
+
+  // Use the WebSocket hook with the stable callback
+  const { isConnected } = useBookingUpdates(bookingUpdateHandler);
 
   // Function to load paginated bookings (reset if needed)
   const loadBookings = useCallback(
     async (reset = false) => {
+      // Prevent multiple simultaneous loading requests
+      if (isLoading) return;
+
       try {
         setIsLoading(true);
         const currentOffset = reset ? 0 : offset;
         const data = await fetchBookings(currentOffset, ITEMS_LIMIT);
+
         if (reset) {
           setBookings(data.results);
+          setOffset(data.next_offset !== null ? data.next_offset : 0);
         } else {
           setBookings((prev) => {
             const combined = [...prev, ...data.results];
@@ -65,26 +88,28 @@ export default function BookingsOverview() {
             }, []);
             return uniqueBookings;
           });
+          if (data.next_offset !== null) {
+            setOffset(data.next_offset);
+          }
         }
-        if (data.next_offset !== null) {
-          setOffset(data.next_offset);
-          setHasMore(true);
-        } else {
-          setHasMore(false);
-        }
+
+        setHasMore(data.next_offset !== null);
+        setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load bookings");
       } finally {
         setIsLoading(false);
       }
     },
-    [offset]
+    [isLoading, offset]
   );
 
   // Initial data load
   useEffect(() => {
-    loadBookings(true);
-    setOffset(0);
+    if (!initialLoadDone.current) {
+      loadBookings(true);
+      initialLoadDone.current = true;
+    }
   }, [loadBookings]);
 
   // Listen for server status changes and sync when back online
@@ -93,17 +118,15 @@ export default function BookingsOverview() {
       const isServerDown = event.detail.serverDown;
       const wasServerDown = serverDown;
       setServerDown(isServerDown);
+
       if (wasServerDown && !isServerDown) {
         console.log("Server is back online. Reloading data...");
         try {
-          setIsLoading(true);
           await syncLocalOperations();
           await loadBookings(true);
         } catch (err) {
           console.error("Error during sync and reload:", err);
           setError(err instanceof Error ? err.message : "Failed to sync and reload");
-        } finally {
-          setIsLoading(false);
         }
       }
     };
@@ -117,33 +140,39 @@ export default function BookingsOverview() {
   // Infinite scroll using Intersection Observer
   useEffect(() => {
     if (!hasMore || isLoading) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          loadBookings();
-        }
-      },
-      { threshold: 1.0 }
-    );
+
+    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      if (entries[0].isIntersecting && !isLoading) {
+        loadBookings();
+      }
+    };
+
+    const observer = new IntersectionObserver(observerCallback, { threshold: 0.5 });
+
     if (loader.current) {
       observer.observe(loader.current);
     }
+
     return () => {
       if (loader.current) {
         observer.unobserve(loader.current);
       }
     };
-  }, [hasMore, isLoading, offset, loadBookings]);
+  }, [hasMore, isLoading, loadBookings]);
 
   // Search handler
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSearching) return;
+
     setIsSearching(true);
     setError(null);
+
     try {
       const results = await searchBookings(filters);
       setBookings(results);
       setHasMore(false);
+      setOffset(0);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Search failed");
     } finally {
@@ -153,6 +182,10 @@ export default function BookingsOverview() {
 
   const handleReset = () => {
     setFilters({ name: "", email: "", phone: "", start_date: "", end_date: "", state: "" });
+    // Reset search results and go back to normal pagination
+    if (!isLoading && !isSearching) {
+      loadBookings(true);
+    }
   };
 
   // Helper functions for booking state styles
@@ -185,30 +218,6 @@ export default function BookingsOverview() {
         return "bg-gray-200 text-gray-800";
     }
   };
-
-  // Real‑time WebSocket integration using the custom hook.
-  // When a new booking comes in, update the local state.
-  useBookingUpdates((newBooking: Booking) => {
-    setBookings((prevBookings) => {
-      const exists = prevBookings.find((b) => b.id === newBooking.id);
-      if (exists) {
-        return prevBookings.map((b) => (b.id === newBooking.id ? newBooking : b));
-      }
-      // Optionally, prepend or append the new booking
-      return [newBooking, ...prevBookings];
-    });
-  });
-
-  if (isLoading && bookings.length === 0) {
-    return (
-      <div className="container mx-auto py-8 px-4 flex justify-center">
-        <div className="flex items-center space-x-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Loading bookings...</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -254,7 +263,7 @@ export default function BookingsOverview() {
                     </Button>
                   </CollapsibleTrigger>
                   {showAdvancedSearch && (
-                    <Button type="button" variant="outline" size="sm" onClick={handleReset} disabled={isSearching}>
+                    <Button type="button" variant="outline" size="sm" onClick={handleReset} disabled={isSearching || isLoading}>
                       Reset Filters
                     </Button>
                   )}
@@ -337,6 +346,15 @@ export default function BookingsOverview() {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
+        {/* Loading state indicator for first load */}
+        {isLoading && bookings.length === 0 && (
+          <div className="container mx-auto py-8 px-4 flex justify-center">
+            <div className="flex items-center space-x-2">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <span>Loading bookings...</span>
+            </div>
+          </div>
+        )}
         {/* Bookings List */}
         <div className="space-y-4">
           {bookings.length === 0 && !isLoading ? (
@@ -381,9 +399,9 @@ export default function BookingsOverview() {
           )}
         </div>
         {/* Loader for infinite scroll */}
-        {hasMore && (
+        {hasMore && !isSearching && (
           <div ref={loader} className="flex justify-center py-4">
-            <Loader2 className="h-6 w-6 animate-spin" />
+            {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : <div className="h-10"></div>}
           </div>
         )}
       </div>
