@@ -121,7 +121,7 @@ The user is prompted to confirm the deletion, ensuring that accidental deletions
   - Endless Scrolling: On the bookings page scroll down and notice that every 10 bookings a hot-reload is performed!
 - Gold Tier
   - Async Chart Data via WebSocket
-    - Go to MPP>MPP>settings.py and set WS_FLAG to True to activate the WebSocket on the next run of the Backend
+    - Run ```daphne -p 8001 MPP.asgi:application``` to activate the WebSocket
     - Once the app starts a new thread is created (view apps.py in bookings) which generates new bookings every 2 seconds.
     - The WebSocket methods are defined in consumer.py and implement the Django 'channels' api for websockets.
     - In the frontend notice the incoming data in the list and in the charts in real time

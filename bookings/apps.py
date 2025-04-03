@@ -1,6 +1,7 @@
 ###################
 # IMPORTS SECTION #
 ###################
+import random
 import threading
 import time
 from django.apps import AppConfig
@@ -35,6 +36,8 @@ class BookingsConfig(AppConfig):
         from bookings.serializers import BookingSerializer
 
         channel_layer = get_channel_layer()
+        index = 1
+        statuses = ['PENDING', 'COMPLETED', 'CANCELLED', 'CONFIRMED']
         while True:
             # Wait for a while before generating a new booking.
             time.sleep(2)
@@ -42,15 +45,17 @@ class BookingsConfig(AppConfig):
 
             # Create a new booking (or simulate one)
             new_booking = Booking.objects.create(
-                customerName="Auto Generated",
+                customerName=f"Auto Generated{index}",
                 customerEmail="auto@example.com",
                 customerPhone="1234567890",
                 startDate="2025-04-02",
                 endDate="2025-04-03",
-                state="PENDING",
+                state=random.choice(statuses),
             )
             serializer = BookingSerializer(new_booking)
             data = {"new_booking": serializer.data}
+
+            index += 1
 
             # Broadcast the new booking data to the group.
             async_to_sync(channel_layer.group_send)(

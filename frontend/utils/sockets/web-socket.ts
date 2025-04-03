@@ -3,86 +3,86 @@
 /////////////////////
 // IMPORTS SECTION //
 /////////////////////
-import { useEffect, useState, useCallback } from "react";
-import type { Booking } from "./../types/bookings-type"
-
+import { useEffect, useState, useCallback, useRef } from "react";
+import type { Booking } from "../types/bookings-type";
 
 ///////////////////////
 // WEBSOCKET SECTION //
 ///////////////////////
+
+
 function useBookingUpdates(onBookingUpdate: (booking: Booking) => void) {
-  const [socket, setSocket] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const socketRef = useRef<WebSocket | null>(null);
   const MAX_RECONNECT_ATTEMPTS = 5;
   const RECONNECT_INTERVAL = 3000;
 
-  // Setup WebSocket connection
-  const setupSocket = useCallback(() => {
-    const newSocket = new WebSocket("ws://localhost:8000/ws/bookings/");
+  // Cleanup function to close the WebSocket properly
+  const closeSocket = () => {
+    if (socketRef.current) {
+      socketRef.current.onclose = null;
+      socketRef.current.close();
+      socketRef.current = null;
+    }
+  };
 
-    newSocket.onopen = () => {
-      console.log("WebSocket connection established");
+  const setupSocket = useCallback(() => {
+    closeSocket(); // Make sure to close any existing socket
+
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const host = window.location.hostname;
+    const wsUrl = `${protocol}://localhost:8001/ws/bookings/`;
+    const socket = new WebSocket(wsUrl);
+
+    socketRef.current = socket;
+
+    socket.onopen = () => {
+      console.log("WebSocket connected ✅");
       setIsConnected(true);
       setReconnectAttempts(0);
     };
 
-    newSocket.onmessage = (event) => {
+    socket.onmessage = (event) => {
+      console.log("WebSocket message received:", event.data);
       try {
         const data = JSON.parse(event.data);
-
-        // Handle different message types
         if (data.new_booking) {
+          console.log("New booking received:", data.new_booking);
           onBookingUpdate(data.new_booking);
-        } else if (data.updated_booking) {
-          onBookingUpdate(data.updated_booking);
-        } else if (data.deleted_booking_id) {
-          // If we need to handle deletions, we could call a separate callback here
         }
       } catch (error) {
-        console.error("Error processing WebSocket message:", error);
+        console.error("Error parsing WebSocket message:", error);
       }
     };
 
-    newSocket.onclose = (event) => {
-      console.log(`WebSocket connection closed: ${event.code} ${event.reason}`);
+
+    socket.onclose = (event) => {
+      console.warn(`WebSocket closed: ${event.code} - ${event.reason}`);
       setIsConnected(false);
 
-      // Attempt to reconnect if not a normal closure
+      // Reconnect if not a normal closure and we haven't exceeded attempts
       if (event.code !== 1000 && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
         setTimeout(() => {
-          console.log(`Attempting to reconnect (${reconnectAttempts + 1}/${MAX_RECONNECT_ATTEMPTS})...`);
-          setReconnectAttempts(prev => prev + 1);
+          console.log(`Reconnecting (${reconnectAttempts + 1}/${MAX_RECONNECT_ATTEMPTS})...`);
+          setReconnectAttempts((prev) => prev + 1);
           setupSocket();
         }, RECONNECT_INTERVAL);
       }
     };
 
-    newSocket.onerror = (error) => {
-      console.error("WebSocket error:", error);
+    socket.onerror = (error) => {
+      console.error("WebSocket encountered an error:", error);
     };
-
-    setSocket(newSocket);
-
-    return newSocket;
   }, [onBookingUpdate, reconnectAttempts]);
 
-  // Initial setup and cleanup
   useEffect(() => {
-    const newSocket = setupSocket();
-
-    return () => {
-      if (newSocket.readyState === WebSocket.OPEN ||
-          newSocket.readyState === WebSocket.CONNECTING) {
-        newSocket.close();
-      }
-    };
+    setupSocket();
+    return () => closeSocket();
   }, [setupSocket]);
 
-  return {
-    isConnected,
-    reconnectAttempts
-  };
+  return { isConnected, reconnectAttempts };
 }
 
 export default useBookingUpdates;
+

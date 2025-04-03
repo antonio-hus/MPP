@@ -23,12 +23,14 @@ import type { Booking } from "@/utils/types/bookings-type";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import NetworkStatusNotificationBar from "@/components/StatusNotificationBar";
+import useBookingUpdates from "@/utils/sockets/web-socket";
 
 
-/////////////////////
-//   CHART SETUP   //
-/////////////////////
+//////////////////////////
+//  CHART REGISTRATION  //
+//////////////////////////
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Title, Tooltip, Legend);
+
 
 //////////////////////////
 // COMPONENT DEFINITION //
@@ -36,6 +38,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, PointElemen
 export default function AnalyticsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
 
+  // Initial data load
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -45,11 +48,21 @@ export default function AnalyticsPage() {
         console.error("Error fetching analytics data", err);
       }
     };
-
     loadData();
   }, []);
 
-  // Global stats computed from bookings dataset
+  // Listen for real‑time booking updates and update analytics data
+  useBookingUpdates((newBooking: Booking) => {
+    setBookings((prevBookings) => {
+      const exists = prevBookings.find((b) => b.id === newBooking.id);
+      if (exists) {
+        return prevBookings.map((b) => (b.id === newBooking.id ? newBooking : b));
+      }
+      return [newBooking, ...prevBookings];
+    });
+  });
+
+  // Compute global stats
   const totalBookingsCount = bookings.length;
   const pendingCount = bookings.filter((b) => b.state === "PENDING").length;
   const confirmedCount = bookings.filter((b) => b.state === "CONFIRMED").length;

@@ -3,7 +3,7 @@
 /////////////////////
 // IMPORTS SECTION //
 /////////////////////
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import NetworkStatusNotificationBar from "@/components/StatusNotificationBar";
+import useBookingUpdates from "@/utils/sockets/web-socket";
 
 
 //////////////////////////
@@ -28,27 +29,34 @@ export default function BookingsOverview() {
   const [error, setError] = useState<string | null>(null);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [serverDown, setServerDown] = useState(false);
-  const [filters, setFilters] = useState({name: "", email: "", phone: "", start_date: "", end_date: "", state: "",});
+  const [filters, setFilters] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    start_date: "",
+    end_date: "",
+    state: "",
+  });
 
-  // Infinite scroll pagination state for the list view
+  // Infinite scroll pagination state
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const loader = useRef<HTMLDivElement>(null);
   const ITEMS_LIMIT = 10;
 
-  // Function to load paginated bookings for the list
+  // Function to load paginated bookings (reset if needed)
   const loadBookings = useCallback(
     async (reset = false) => {
       try {
         setIsLoading(true);
         const currentOffset = reset ? 0 : offset;
         const data = await fetchBookings(currentOffset, ITEMS_LIMIT);
-
         if (reset) {
           setBookings(data.results);
         } else {
           setBookings((prev) => {
             const combined = [...prev, ...data.results];
+            // Remove duplicates based on booking.id
             const uniqueBookings = combined.reduce<Booking[]>((acc, booking) => {
               if (!acc.some((b) => b.id === booking.id)) {
                 acc.push(booking);
@@ -58,7 +66,6 @@ export default function BookingsOverview() {
             return uniqueBookings;
           });
         }
-
         if (data.next_offset !== null) {
           setOffset(data.next_offset);
           setHasMore(true);
@@ -74,19 +81,18 @@ export default function BookingsOverview() {
     [offset]
   );
 
-  // Load bookings on mount
+  // Initial data load
   useEffect(() => {
     loadBookings(true);
     setOffset(0);
   }, [loadBookings]);
 
+  // Listen for server status changes and sync when back online
   useEffect(() => {
     const handleServerChange = async (event: CustomEvent) => {
       const isServerDown = event.detail.serverDown;
       const wasServerDown = serverDown;
-
       setServerDown(isServerDown);
-
       if (wasServerDown && !isServerDown) {
         console.log("Server is back online. Reloading data...");
         try {
@@ -108,10 +114,9 @@ export default function BookingsOverview() {
     };
   }, [serverDown, loadBookings]);
 
-  // Intersection Observer: load more when the loader becomes visible
+  // Infinite scroll using Intersection Observer
   useEffect(() => {
     if (!hasMore || isLoading) return;
-
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
@@ -130,7 +135,7 @@ export default function BookingsOverview() {
     };
   }, [hasMore, isLoading, offset, loadBookings]);
 
-  // Search handler (resets bookings and pagination)
+  // Search handler
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSearching(true);
@@ -150,7 +155,7 @@ export default function BookingsOverview() {
     setFilters({ name: "", email: "", phone: "", start_date: "", end_date: "", state: "" });
   };
 
-  // Helpers for booking state display
+  // Helper functions for booking state styles
   const getStateBgColor = (state: string): string => {
     switch (state) {
       case "PENDING":
@@ -181,6 +186,19 @@ export default function BookingsOverview() {
     }
   };
 
+  // Real‑time WebSocket integration using the custom hook.
+  // When a new booking comes in, update the local state.
+  useBookingUpdates((newBooking: Booking) => {
+    setBookings((prevBookings) => {
+      const exists = prevBookings.find((b) => b.id === newBooking.id);
+      if (exists) {
+        return prevBookings.map((b) => (b.id === newBooking.id ? newBooking : b));
+      }
+      // Optionally, prepend or append the new booking
+      return [newBooking, ...prevBookings];
+    });
+  });
+
   if (isLoading && bookings.length === 0) {
     return (
       <div className="container mx-auto py-8 px-4 flex justify-center">
@@ -198,134 +216,120 @@ export default function BookingsOverview() {
       <Header />
       <div className="flex-col flex-1 container mx-auto py-8 px-4">
         {/* Search Form */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <form onSubmit={handleSearch}>
-              <div className="space-y-4">
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <Input
-                      type="text"
-                      placeholder="Search by customer name"
-                      value={filters.name}
-                      onChange={(e) => setFilters({ ...filters, name: e.target.value })}
-                      disabled={isSearching}
-                      className="w-full"
-                    />
-                  </div>
-                  <Button
-                    className="bg-[#FF9800] hover:bg-[#F57C00]"
-                    type="submit"
+        <div className="mb-6">
+          <form onSubmit={handleSearch}>
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Input
+                    type="text"
+                    placeholder="Search by customer name"
+                    value={filters.name}
+                    onChange={(e) => setFilters({ ...filters, name: e.target.value })}
                     disabled={isSearching}
-                  >
-                    {isSearching ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Searching...
-                      </>
-                    ) : (
-                      <>
-                        <Search className="mr-2 h-4 w-4" />
-                        Search
-                      </>
-                    )}
-                  </Button>
+                    className="w-full"
+                  />
                 </div>
-
-                <Collapsible open={showAdvancedSearch} onOpenChange={setShowAdvancedSearch} className="w-full">
-                  <div className="flex justify-between items-center">
-                    <CollapsibleTrigger asChild>
-                      <Button variant="ghost" size="sm" className="p-0 h-auto">
-                        <span className="flex items-center text-sm text-muted-foreground">
-                          {showAdvancedSearch ? "Hide Advanced Search" : "Show Advanced Search"}
-                        </span>
-                      </Button>
-                    </CollapsibleTrigger>
-                    {showAdvancedSearch && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleReset}
-                        disabled={isSearching}
-                      >
-                        Reset Filters
-                      </Button>
-                    )}
-                  </div>
-                  <CollapsibleContent className="mt-4">
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                      <div>
-                        <label htmlFor="email" className="text-sm font-medium block mb-1">
-                          Email
-                        </label>
-                        <Input
-                          id="email"
-                          type="email"
-                          placeholder="customer@example.com"
-                          value={filters.email}
-                          onChange={(e) => setFilters({ ...filters, email: e.target.value })}
-                          disabled={isSearching}
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="phone" className="text-sm font-medium block mb-1">
-                          Phone
-                        </label>
-                        <Input
-                          id="phone"
-                          type="text"
-                          placeholder="+40 (072) 123-4567"
-                          value={filters.phone}
-                          onChange={(e) => setFilters({ ...filters, phone: e.target.value })}
-                          disabled={isSearching}
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="state" className="text-sm font-medium block mb-1">
-                          Booking State
-                        </label>
-                        <Input
-                          id="state"
-                          type="text"
-                          placeholder="PENDING, CONFIRMED, etc."
-                          value={filters.state}
-                          onChange={(e) => setFilters({ ...filters, state: e.target.value })}
-                          disabled={isSearching}
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="start_date" className="text-sm font-medium block mb-1">
-                          Start Date
-                        </label>
-                        <Input
-                          id="start_date"
-                          type="date"
-                          value={filters.start_date}
-                          onChange={(e) => setFilters({ ...filters, start_date: e.target.value })}
-                          disabled={isSearching}
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="end_date" className="text-sm font-medium block mb-1">
-                          End Date
-                        </label>
-                        <Input
-                          id="end_date"
-                          type="date"
-                          value={filters.end_date}
-                          onChange={(e) => setFilters({ ...filters, end_date: e.target.value })}
-                          disabled={isSearching}
-                        />
-                      </div>
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
+                <Button className="bg-[#FF9800] hover:bg-[#F57C00]" type="submit" disabled={isSearching}>
+                  {isSearching ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Searching...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="mr-2 h-4 w-4" />
+                      Search
+                    </>
+                  )}
+                </Button>
               </div>
-            </form>
-          </CardContent>
-        </Card>
-
+              <Collapsible open={showAdvancedSearch} onOpenChange={setShowAdvancedSearch} className="w-full">
+                <div className="flex justify-between items-center">
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm" className="p-0 h-auto">
+                      <span className="flex items-center text-sm text-muted-foreground">
+                        {showAdvancedSearch ? "Hide Advanced Search" : "Show Advanced Search"}
+                      </span>
+                    </Button>
+                  </CollapsibleTrigger>
+                  {showAdvancedSearch && (
+                    <Button type="button" variant="outline" size="sm" onClick={handleReset} disabled={isSearching}>
+                      Reset Filters
+                    </Button>
+                  )}
+                </div>
+                <CollapsibleContent className="mt-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div>
+                      <label htmlFor="email" className="text-sm font-medium block mb-1">
+                        Email
+                      </label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="customer@example.com"
+                        value={filters.email}
+                        onChange={(e) => setFilters({ ...filters, email: e.target.value })}
+                        disabled={isSearching}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="phone" className="text-sm font-medium block mb-1">
+                        Phone
+                      </label>
+                      <Input
+                        id="phone"
+                        type="text"
+                        placeholder="+40 (072) 123-4567"
+                        value={filters.phone}
+                        onChange={(e) => setFilters({ ...filters, phone: e.target.value })}
+                        disabled={isSearching}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="state" className="text-sm font-medium block mb-1">
+                        Booking State
+                      </label>
+                      <Input
+                        id="state"
+                        type="text"
+                        placeholder="PENDING, CONFIRMED, etc."
+                        value={filters.state}
+                        onChange={(e) => setFilters({ ...filters, state: e.target.value })}
+                        disabled={isSearching}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="start_date" className="text-sm font-medium block mb-1">
+                        Start Date
+                      </label>
+                      <Input
+                        id="start_date"
+                        type="date"
+                        value={filters.start_date}
+                        onChange={(e) => setFilters({ ...filters, start_date: e.target.value })}
+                        disabled={isSearching}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="end_date" className="text-sm font-medium block mb-1">
+                        End Date
+                      </label>
+                      <Input
+                        id="end_date"
+                        type="date"
+                        value={filters.end_date}
+                        onChange={(e) => setFilters({ ...filters, end_date: e.target.value })}
+                        disabled={isSearching}
+                      />
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
+          </form>
+        </div>
         {error && (
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
@@ -333,7 +337,6 @@ export default function BookingsOverview() {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-
         {/* Bookings List */}
         <div className="space-y-4">
           {bookings.length === 0 && !isLoading ? (
@@ -377,7 +380,6 @@ export default function BookingsOverview() {
             ))
           )}
         </div>
-
         {/* Loader for infinite scroll */}
         {hasMore && (
           <div ref={loader} className="flex justify-center py-4">
