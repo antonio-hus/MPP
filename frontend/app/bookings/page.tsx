@@ -17,6 +17,7 @@ import Footer from "@/components/Footer";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import NetworkStatusNotificationBar from "@/components/StatusNotificationBar";
 import useBookingUpdates from "@/utils/sockets/web-socket";
+import {isOnline, updateServerStatus} from "@/utils/api/health-reporting-api";
 
 
 //////////////////////////
@@ -136,6 +137,20 @@ export default function BookingsOverview() {
       window.removeEventListener("serverStatusChange", handleServerChange as EventListener);
     };
   }, [serverDown, loadBookings]);
+
+  useEffect(() => {
+    const checkServer = async () => {
+      const online = isOnline();
+      updateServerStatus(!online);
+
+      window.dispatchEvent(new CustomEvent("serverStatusChange", { detail: { serverDown: !online } }));
+    };
+
+    // Check every 5 seconds
+    const interval = setInterval(checkServer, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
 
   // Infinite scroll using Intersection Observer
   useEffect(() => {

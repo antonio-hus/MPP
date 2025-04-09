@@ -4,7 +4,7 @@
 // IMPORTS SECTION //
 /////////////////////
 import type React from "react"
-import { useState } from "react"
+import {useEffect, useState} from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,6 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
 import NetworkStatusNotificationBar from "@/components/StatusNotificationBar";
+import {isOnline, updateServerStatus} from "@/utils/api/health-reporting-api";
 
 
 //////////////////////////
@@ -64,6 +65,19 @@ export default function CreateBookingPage() {
       setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    const checkServer = async () => {
+      const online = isOnline();
+      updateServerStatus(!online);
+
+      window.dispatchEvent(new CustomEvent("serverStatusChange", { detail: { serverDown: !online } }));
+    };
+
+    // Check every 5 seconds
+    const interval = setInterval(checkServer, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   // JSX SECTION//
   return (

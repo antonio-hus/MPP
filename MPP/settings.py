@@ -57,7 +57,7 @@ ASGI_APPLICATION = "MPP.asgi.application"
 #################
 #   WEBSOCKET   #
 #################
-WS_FLAG = True
+WS_FLAG = False
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',

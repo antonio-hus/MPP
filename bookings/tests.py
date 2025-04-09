@@ -13,6 +13,8 @@ from bookings.serializers import BookingSerializer
 #################
 # TESTS SECTION #
 #################
+
+
 class TestBookingView(TestCase):
     def setUp(self):
         self.factory = APIRequestFactory()
@@ -32,7 +34,8 @@ class TestBookingView(TestCase):
         request = self.factory.get('/bookings/')
         response = booking_list(request)
         serializer = BookingSerializer(Booking.objects.all(), many=True)
-        self.assertEqual(response.data, serializer.data)
+        # Check for paginated response
+        self.assertEqual(response.data['results'], serializer.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_booking_list_filter_by_id(self):
@@ -40,7 +43,8 @@ class TestBookingView(TestCase):
         response = booking_list(request)
         qs = Booking.objects.filter(id=self.booking.id)
         serializer = BookingSerializer(qs, many=True)
-        self.assertEqual(response.data, serializer.data)
+        # Check for paginated response
+        self.assertEqual(response.data['results'], serializer.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_booking_list_filter_by_name(self):
@@ -48,7 +52,8 @@ class TestBookingView(TestCase):
         response = booking_list(request)
         qs = Booking.objects.filter(customerName__icontains="ion")
         serializer = BookingSerializer(qs, many=True)
-        self.assertEqual(response.data, serializer.data)
+        # Check for paginated response
+        self.assertEqual(response.data['results'], serializer.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_booking_list_filter_by_email(self):
@@ -56,7 +61,8 @@ class TestBookingView(TestCase):
         response = booking_list(request)
         qs = Booking.objects.filter(customerEmail__icontains="popescu")
         serializer = BookingSerializer(qs, many=True)
-        self.assertEqual(response.data, serializer.data)
+        # Check for paginated response
+        self.assertEqual(response.data['results'], serializer.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_booking_list_filter_by_phone(self):
@@ -64,7 +70,8 @@ class TestBookingView(TestCase):
         response = booking_list(request)
         qs = Booking.objects.filter(customerPhone__icontains="0722")
         serializer = BookingSerializer(qs, many=True)
-        self.assertEqual(response.data, serializer.data)
+        # Check for paginated response
+        self.assertEqual(response.data['results'], serializer.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_booking_list_filter_by_start_date(self):
@@ -73,7 +80,8 @@ class TestBookingView(TestCase):
         response = booking_list(request)
         qs = Booking.objects.filter(startDate__gte=start_date)
         serializer = BookingSerializer(qs, many=True)
-        self.assertEqual(response.data, serializer.data)
+        # Check for paginated response
+        self.assertEqual(response.data['results'], serializer.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_booking_list_filter_by_end_date(self):
@@ -82,7 +90,8 @@ class TestBookingView(TestCase):
         response = booking_list(request)
         qs = Booking.objects.filter(endDate__lte=end_date)
         serializer = BookingSerializer(qs, many=True)
-        self.assertEqual(response.data, serializer.data)
+        # Check for paginated response
+        self.assertEqual(response.data['results'], serializer.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_booking_list_filter_by_state(self):
@@ -90,7 +99,8 @@ class TestBookingView(TestCase):
         response = booking_list(request)
         qs = Booking.objects.filter(state="CONFIRMED")
         serializer = BookingSerializer(qs, many=True)
-        self.assertEqual(response.data, serializer.data)
+        # Check for paginated response
+        self.assertEqual(response.data['results'], serializer.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_booking_list_filter_by_createdAt(self):
@@ -99,7 +109,8 @@ class TestBookingView(TestCase):
         response = booking_list(request)
         qs = Booking.objects.filter(createdAt=created_at)
         serializer = BookingSerializer(qs, many=True)
-        self.assertEqual(response.data, serializer.data)
+        # Check for paginated response
+        self.assertEqual(response.data['results'], serializer.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_booking_list_filter_by_completedAt(self):
@@ -108,7 +119,8 @@ class TestBookingView(TestCase):
         response = booking_list(request)
         qs = Booking.objects.filter(completedAt=completed_at)
         serializer = BookingSerializer(qs, many=True)
-        self.assertEqual(response.data, serializer.data)
+        # Check for paginated response
+        self.assertEqual(response.data['results'], serializer.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_booking_list_ordering(self):
@@ -126,7 +138,8 @@ class TestBookingView(TestCase):
         response = booking_list(request)
         qs = Booking.objects.all().order_by("customerName")
         serializer = BookingSerializer(qs, many=True)
-        self.assertEqual(response.data, serializer.data)
+        # Check for paginated response
+        self.assertEqual(response.data['results'], serializer.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_booking_list_post_valid_data(self):

@@ -24,6 +24,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import type { Booking } from "@/utils/types/bookings-type";
 import NetworkStatusNotificationBar from "@/components/StatusNotificationBar";
+import {isOnline, updateServerStatus} from "@/utils/api/health-reporting-api";
 
 
 //////////////////////////
@@ -72,6 +73,19 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
     };
     fetchBooking();
   }, [resolvedParams.id]);
+
+  useEffect(() => {
+    const checkServer = async () => {
+      const online = isOnline();
+      updateServerStatus(!online);
+
+      window.dispatchEvent(new CustomEvent("serverStatusChange", { detail: { serverDown: !online } }));
+    };
+
+    // Check every 5 seconds
+    const interval = setInterval(checkServer, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
 
   // HANDLERS //
