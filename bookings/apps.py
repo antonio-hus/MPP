@@ -1,13 +1,19 @@
 ###################
 # IMPORTS SECTION #
 ###################
+# Python Libraries
+import sys
 import random
 import threading
 import time
+# Django Libraries
 from django.apps import AppConfig
 from django.conf import settings
 from asgiref.sync import async_to_sync
+# Third Party Libraries
 from channels.layers import get_channel_layer
+from django.db.models import Count
+from django.utils import timezone
 
 
 ##############################
@@ -18,18 +24,52 @@ class BookingsConfig(AppConfig):
     name = "bookings"
 
     def ready(self):
-        from bookings.models import Booking
 
         # Delete all bookings with auto-generated email
-        deleted_count, _ = Booking.objects.filter(customerEmail="auto@example.com").delete()
-        print(f"Cleaned up {deleted_count} auto-generated bookings")
+        # from bookings.models import Booking
+        # deleted_count, _ = Booking.objects.filter(customerEmail="auto@example.com").delete()
+        # print(f"Cleaned up {deleted_count} auto-generated bookings")
+
+        # Start thread only on runserver command
+        if any(cmd in sys.argv for cmd in ('makemigrations', 'migrate', 'collectstatic', 'test')):
+            return
+
+        # Start monitor thread when the app is ready
+        monitor_thread = threading.Thread(target=self.monitor_loop, daemon=True)
+        monitor_thread.start()
 
         # Check if we want a background websocket running
         if settings.WS_FLAG:
 
-            # Start the background thread when the app is ready.
-            thread = threading.Thread(target=self.generate_bookings, daemon=True)
-            thread.start()
+            # Start websocket thread when the app is ready.
+            websocket_thread = threading.Thread(target=self.generate_bookings, daemon=True)
+            websocket_thread.start()
+
+    def monitor_loop(self):
+        from .models import OperationLog, MonitoredUser
+        interval = getattr(settings, 'MONITOR_SCAN_INTERVAL', 60)
+        window = getattr(settings, 'MONITOR_WINDOW_SIZE', 60)
+        thresh = getattr(settings, 'MONITOR_THRESHOLD', 20)
+
+        while True:
+            now = timezone.now()
+            window_start = now - timezone.timedelta(seconds=window)
+
+            # Aggregate operations per user in the window
+            qs = (OperationLog.objects
+                  .filter(timestamp__gte=window_start)
+                  .values('user')
+                  .annotate(op_count=Count('id'))
+                  .filter(op_count__gt=thresh))
+
+            for entry in qs:
+                user_id = entry['user']
+
+                # If not already flagged, create an entry
+                MonitoredUser.objects.get_or_create(user_id=user_id)
+                print("We have a suspicious user: ", user_id)
+
+            time.sleep(interval)
 
     def generate_bookings(self):
         from bookings.models import Booking

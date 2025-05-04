@@ -18,6 +18,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import NetworkStatusNotificationBar from "@/components/StatusNotificationBar";
 import useBookingUpdates from "@/utils/sockets/web-socket";
 import {isOnline, updateServerStatus} from "@/utils/api/health-reporting-api";
+import {syncLocalHotels} from "@/utils/api/hotels-api";
+import {syncLocalRooms} from "@/utils/api/rooms-api";
 
 
 //////////////////////////
@@ -61,7 +63,7 @@ export default function BookingsOverview() {
   }, []);
 
   // Use the WebSocket hook with the stable callback
-  const { isConnected } = useBookingUpdates(bookingUpdateHandler);
+  // const { isConnected } = useBookingUpdates(bookingUpdateHandler);
 
   // Function to load paginated bookings (reset if needed)
   const loadBookings = useCallback(
@@ -124,6 +126,8 @@ export default function BookingsOverview() {
         console.log("Server is back online. Reloading data...");
         try {
           await syncLocalOperations();
+          await syncLocalHotels();
+          await syncLocalRooms();
           await loadBookings(true);
         } catch (err) {
           console.error("Error during sync and reload:", err);

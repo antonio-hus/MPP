@@ -3,6 +3,7 @@
 /////////////////////
 import type { Booking } from "./../types/bookings-type"
 import { updateServerStatus, updateNetworkStatus, isOnline } from "./health-reporting-api"
+import {authFetch} from "@/utils/api/config-api";
 
 
 ///////////////////////
@@ -58,7 +59,7 @@ export async function syncLocalOperations(): Promise<void> {
     try {
       if (op.type === "create") {
         // Call the real API create endpoint
-        const response = await fetch(`${API_URL}/bookings/`, {
+        const response = await authFetch(`${API_URL}/bookings/`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -77,7 +78,7 @@ export async function syncLocalOperations(): Promise<void> {
         successfulOps.add(op)
 
       } else if (op.type === "update") {
-        const response = await fetch(`${API_URL}/bookings/${op.id}/`, {
+        const response = await authFetch(`${API_URL}/bookings/${op.id}/`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -95,7 +96,7 @@ export async function syncLocalOperations(): Promise<void> {
         successfulOps.add(op)
 
       } else if (op.type === "delete") {
-        const response = await fetch(`${API_URL}/bookings/${op.id}/`, {
+        const response = await authFetch(`${API_URL}/bookings/${op.id}/`, {
           method: "DELETE",
         })
 
@@ -125,7 +126,7 @@ export async function syncLocalOperations(): Promise<void> {
 export async function fetchBookings(offset: number = 0, limit: number = 10): Promise<{ count: number; results: Booking[]; next_offset: number | null }> {
   if (isOnline()) {
     try {
-      const response = await fetch(`${API_URL}/bookings/?offset=${offset}&limit=${limit}`);
+      const response = await authFetch(`${API_URL}/bookings/?offset=${offset}&limit=${limit}`);
       if (!response.ok) {
         updateServerStatus(true);
         throw new Error(`Error fetching bookings: ${response.statusText}`);
@@ -173,7 +174,7 @@ export async function fetchBookings(offset: number = 0, limit: number = 10): Pro
 export async function fetchBookingById(id: string): Promise<Booking> {
   if (isOnline()) {
     try {
-      const response = await fetch(`${API_URL}/bookings/${id}/`)
+      const response = await authFetch(`${API_URL}/bookings/${id}/`)
       if (!response.ok) {
         updateServerStatus(true)
         throw new Error(`Error fetching booking: ${response.statusText}`)
@@ -212,7 +213,7 @@ export async function fetchBookingById(id: string): Promise<Booking> {
 export async function createBookingApi(booking: Omit<Booking, "id">): Promise<Booking> {
   if (isOnline()) {
     try {
-      const response = await fetch(`${API_URL}/bookings/`, {
+      const response = await authFetch(`${API_URL}/bookings/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -246,7 +247,7 @@ export async function createBookingApi(booking: Omit<Booking, "id">): Promise<Bo
 export async function updateBookingApi(id: string, booking: Omit<Booking, "id">): Promise<Booking> {
   if (isOnline()) {
     try {
-      const response = await fetch(`${API_URL}/bookings/${id}/`, {
+      const response = await authFetch(`${API_URL}/bookings/${id}/`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -284,7 +285,7 @@ export async function updateBookingApi(id: string, booking: Omit<Booking, "id">)
 export async function deleteBookingApi(id: string): Promise<void> {
   if (isOnline()) {
     try {
-      const response = await fetch(`${API_URL}/bookings/${id}/`, {
+      const response = await authFetch(`${API_URL}/bookings/${id}/`, {
         method: "DELETE",
       })
 
@@ -329,7 +330,7 @@ export async function searchBookings(filters: {
       if (filters.end_date) params.append('end_date', filters.end_date);
       if (filters.state) params.append('state', filters.state);
 
-      const response = await fetch(`${API_URL}/bookings/?${params.toString()}`);
+      const response = await authFetch(`${API_URL}/bookings/?${params.toString()}`);
 
       if (!response.ok) {
         updateServerStatus(true);

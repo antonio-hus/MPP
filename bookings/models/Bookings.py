@@ -11,7 +11,6 @@ from django.db import models
 ##     MODEL SECTION     ##
 ###########################
 class Booking(models.Model):
-    """Represents bookings that affect available slots."""
     class BookingState(models.TextChoices):
         PENDING = 'PENDING', 'Pending'
         CONFIRMED = 'CONFIRMED', 'Confirmed'
@@ -31,3 +30,8 @@ class Booking(models.Model):
     )
     createdAt = models.DateTimeField(auto_now_add=True, db_column="created_at")
     completedAt = models.DateTimeField(null=True, blank=True, db_column="completed_at")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['startDate', 'endDate'])
+        ]

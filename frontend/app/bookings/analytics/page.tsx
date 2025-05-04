@@ -66,6 +66,7 @@ export default function AnalyticsPage() {
   }, []);
 
   // Listen for real‑time booking updates and update analytics data
+  /*
   useBookingUpdates((newBooking: Booking) => {
     setBookings((prevBookings) => {
       const exists = prevBookings.find((b) => b.id === newBooking.id);
@@ -75,6 +76,7 @@ export default function AnalyticsPage() {
       return [newBooking, ...prevBookings];
     });
   });
+  */
 
   // Compute global stats
   const totalBookingsCount = bookings.length;

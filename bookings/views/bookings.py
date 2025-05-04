@@ -2,18 +2,22 @@
 # IMPORTS SECTION #
 ###################
 # Django Rest Framework Libraries
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 # Project Libraries
 from bookings.models import Booking
+from bookings.permissions import IsAuthenticatedExceptHead, IsAuthenticated
 from bookings.serializers import BookingSerializer
+from bookings.utils import log_crud
 
 
 #################
 # VIEWS SECTION #
 #################
 @api_view(['GET', 'POST', 'HEAD'])
+@permission_classes([IsAuthenticatedExceptHead])
+@log_crud('Booking')
 def booking_list(request):
     """
     List all bookings or create a new booking.
@@ -95,8 +99,9 @@ def booking_list(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
+@permission_classes([IsAuthenticated])
 @api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
+@log_crud('Booking')
 def booking_detail(request, pk):
     """
     Retrieve, update (PUT or PATCH) or delete a booking by its primary key.

@@ -7,6 +7,8 @@ import { useState, useEffect } from "react";
 import { WifiOff, ServerOff } from "lucide-react";
 import { syncLocalOperations } from "@/utils/api/bookings-api";
 import { checkServerStatus } from "@/utils/api/health-reporting-api";
+import {syncLocalHotels} from "@/utils/api/hotels-api";
+import {syncLocalRooms} from "@/utils/api/rooms-api";
 
 
 //////////////////////////
@@ -59,6 +61,8 @@ export default function NetworkStatusNotificationBar() {
         setSyncing(true);
         try {
           await syncLocalOperations();
+          await syncLocalHotels();
+          await syncLocalRooms();
         } catch (error) {
           console.error("Failed to sync local operations:", error);
         } finally {

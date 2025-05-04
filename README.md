@@ -128,3 +128,57 @@ The user is prompted to confirm the deletion, ensuring that accidental deletions
   - File Uploads
     - Go to /files route in the frontend and upload / download server media.
     - In the backend media is saved under MPP/media/uploads.
+
+### Assignment 6: Gold Tier
+- Bronze Tier
+  - Added two new classes: Hotels and Rooms
+  - Both classes have full CRUD operation availability which can be tested from the frontend - see relevant routes from the dashboard.
+  - Filtering and Sorting can be done on all fields of the entities, including on the foreign key Hotel-Room and multiple criteria at once. Can also be tested from the Hotels / Rooms browsing pages.
+  - Django ORM was used to create the models (default ORM of the framework). See bookings>models>*.py files.
+- Silver Tier
+  - Populating Tables: 
+    - Run ```set DJANGO_SETTINGS_MODULE=MPP.MPP.settings_loadtest``` to get in the test environment database
+    - Run ```python loadtest.py```
+    - Data will now be generated ~500.000 entities
+    - Run ```set DJANGO_SETTINGS_MODULE=MPP.MPP.settings``` only after testing the Silver Tier to get back to the development database
+  - Performance Optimization:
+    - Added Indexes to Hotel ratings, Room hotels (foreign key) & price per night, Bookings start date & end date
+    - Using select_related query optimization to get relevant data before it is actually needed saving time on those trips to the db (e.g. the hotel to which a room belongs)
+    - Complex Statistical Query: Which hotels have an average room price above the overall average across all hotels — and how do their total capacity and rating compare? - see booking>views>statistics.py
+  - Performance Testing:
+    - Download & Open JMeter from Apache (e.g. on my machine ```cd C:\apache-jmeter-5.6.3\bin``` and then ```jmeter.bat```)
+    - Uncomment this line in manage.py ```# os.environ.setdefault("DJANGO_SETTINGS_MODULE", "MPP.loadtest_settings")``` and run the server with ```python manage.py runserver```
+    - A GUI screen will open. Load the loadtest.jmx file and hit the green button to start running. Watch the listeners and analyze results. You can view the difference between having and not having indexes by removing migration 0005 (this adds indexes).
+    - Results after index optimizations:
+      - Average: 109714
+      - Min: 19647
+      - Max: 142953
+      - Std. Dev.: 291507.15
+      - Throughput: 24.7 /min (Requests)
+- Gold Tier
+  - Authentication System
+    - Added basic Register / Login Functionality using Django's builtin authentication system
+    - Added Register / Login Serializers and Views
+    - Added Frontend Api Calls for the Views
+    - Added authentication pages - /auth/, /auth/login, /auth/register
+    - In case a user is not authenticated it will be automatically redirected to /auth/
+  - User Roles
+    - Added a BookingUser custom user model extending Django's AbstractUser (so it has a bunch of fields - phone number, email, full name, etc.)
+    - Even more the BookingUser can have one of two roles: user or admin
+    - In the frontend the role is also stored in local storage, based on that the admin gets the additional Dashboard route in the Header
+  - Logging System
+    - Added OperationLogs model which stores the operation type, which user performed it, the object and model upon the operation was done and the timestamp
+    - Added a decorator to automatically pick up the request and user and create a log entity (see utils.py)
+  - Background Monitoring Thread
+    - Added Monitored User model which stores the monitored user and the time he was flagged
+    - Added settings configurations for the monitoring mechanism thresholds
+    - Added thread running on ```python manage.py runserver``` and bookings app ready
+  - Admin Dashboard
+    - Added admin permission decorator check
+    - Added monitored-users view only accessible to admins
+    - Added operation-log view only accessible to admins
+    - Added admin dashboard  at the path ```/dashboard```
+  - Simulated Attack Scenario
+    - Perform a high volume of crud operations
+    - Go to ```/dashboard``` and see the monitored user and their logs
+    - In the backend console you can see the message "We have a suspicious user: user_id"

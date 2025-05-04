@@ -7,8 +7,9 @@ import os
 from django.conf import settings
 from django.http import FileResponse, Http404, JsonResponse
 # Django Rest Framework Libraries
-from rest_framework.decorators import api_view, parser_classes
+from rest_framework.decorators import api_view, parser_classes, permission_classes
 from rest_framework.parsers import FileUploadParser, MultiPartParser
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -17,6 +18,7 @@ from rest_framework import status
 # VIEWS SECTION #
 #################
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def list_files(request):
     """
     :return: Returns the list of filenames from the server
@@ -30,6 +32,7 @@ def list_files(request):
 
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser])
 def upload_file(request, filename, format=None):
     """
@@ -61,6 +64,7 @@ def upload_file(request, filename, format=None):
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def download_file(request, filename):
     """
     :return: Returns the file with the given filename from the server

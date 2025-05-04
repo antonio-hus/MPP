@@ -2,6 +2,7 @@
 // IMPORTS SECTION //
 /////////////////////
 import { updateServerStatus, updateNetworkStatus, isOnline } from "./health-reporting-api"
+import {authFetch} from "@/utils/api/config-api";
 
 
 ///////////////////////
@@ -24,7 +25,7 @@ export async function uploadFile(filename: string, fileData: File): Promise<stri
     const formData = new FormData();
     formData.append('file', fileData);
 
-    const response = await fetch(`${API_URL}/upload/${filename}/`, {
+    const response = await authFetch(`${API_URL}/upload/${filename}/`, {
       method: 'POST',
       body: formData
     });
@@ -52,7 +53,7 @@ export async function downloadFile(filename: string): Promise<Blob> {
   }
 
   try {
-    const response = await fetch(`${API_URL}/download/${filename}/`);
+    const response = await authFetch(`${API_URL}/download/${filename}/`);
 
     if (!response.ok) {
       updateServerStatus(true);
@@ -75,7 +76,7 @@ export async function fetchFileList() {
   }
 
   try {
-    const response = await fetch(`${API_URL}/files/`);
+    const response = await authFetch(`${API_URL}/files/`);
 
     if (!response.ok) {
       updateServerStatus(true);
