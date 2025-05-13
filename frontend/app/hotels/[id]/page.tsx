@@ -21,7 +21,7 @@ import {
 import { fetchHotelById, updateHotelApi, deleteHotelApi } from "@/utils/api/hotels-api"
 import { AlertCircle, Loader2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import Header from "@/components/header"
+import Header from "@/components/Header"
 import Footer from "@/components/Footer"
 import type { Hotel } from "@/utils/types/hotels-type"
 import NetworkStatusNotificationBar from "@/components/StatusNotificationBar"

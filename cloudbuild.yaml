@@ -1,0 +1,20 @@
+steps:
+  # Build the backend image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', '$REGION-docker.pkg.dev/$PROJECT_ID/mpp-repository/mpp-backend:latest', './backend']
+
+  # Build the frontend image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', '$REGION-docker.pkg.dev/$PROJECT_ID/mpp-repository/mpp-frontend:latest', './frontend']
+
+  # Push the backend image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '$REGION-docker.pkg.dev/$PROJECT_ID/mpp-repository/mpp-backend:latest']
+
+  # Push the frontend image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '$REGION-docker.pkg.dev/$PROJECT_ID/mpp-repository/mpp-frontend:latest']
+
+images:
+  - '$REGION-docker.pkg.dev/$PROJECT_ID/mpp-repository/mpp-backend:latest'
+  - '$REGION-docker.pkg.dev/$PROJECT_ID/mpp-repository/mpp-frontend:latest'

@@ -2,7 +2,7 @@ import Link from "next/link"
 import { Building, Calendar, FileText, HomeIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import Header from "@/components/header"
+import Header from "@/components/Header"
 import Footer from "@/components/Footer"
 import NetworkStatusNotificationBar from "@/components/StatusNotificationBar"
 

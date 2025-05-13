@@ -8,7 +8,6 @@ import { Upload, File, Download, CheckCircle, AlertCircle } from "lucide-react"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
 import {uploadFile, downloadFile, fetchFileList} from "@/utils/api/files-api"
-// Assume you have an API_URL constant in your API file
 
 export default function FileUpload() {
   const [file, setFile] = useState<File | null>(null)
@@ -56,7 +55,7 @@ export default function FileUpload() {
       setStatus("success")
       // Refresh the file list after a successful upload
       fetchServerFiles()
-    } catch (error) {
+    } catch {
       setMessage("Upload failed.")
       setStatus("error")
     }

@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle, Loader2 } from "lucide-react"
 import { handleLogin } from "@/utils/api/users-api"
-import Header from "@/components/header"
+import Header from "@/components/Header"
 import Footer from "@/components/Footer"
 import type { LoginPayload } from "@/utils/types/users-type"
 import { useAuth } from "@/components/AuthProvider"

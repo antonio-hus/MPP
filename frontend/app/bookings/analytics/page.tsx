@@ -23,7 +23,6 @@ import type { Booking } from "@/utils/types/bookings-type";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import NetworkStatusNotificationBar from "@/components/StatusNotificationBar";
-import useBookingUpdates from "@/utils/sockets/web-socket";
 import {isOnline, updateServerStatus} from "@/utils/api/health-reporting-api";
 
 

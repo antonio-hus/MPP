@@ -15,7 +15,7 @@ import type { Room } from "@/utils/types/rooms-type"
 import type { Hotel } from "@/utils/types/hotels-type"
 import { AlertCircle, Loader2, Plus, Search, Users, DollarSign, BedDouble } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import Header from "@/components/header"
+import Header from "@/components/Header"
 import Footer from "@/components/Footer"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import NetworkStatusNotificationBar from "@/components/StatusNotificationBar"
@@ -124,7 +124,7 @@ export default function RoomsOverview() {
           await syncLocalRooms()
 
           if (isSearchMode) {
-            await handleSearch(new Event('submit') as any)
+            await handleSearch(new Event('submit') as React.FormEvent)
           } else {
             await loadRooms(true)
           }

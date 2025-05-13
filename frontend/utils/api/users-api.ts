@@ -8,7 +8,7 @@ import {OperationLog} from "@/utils/types/logs-type";
 ///////////////////////
 // CONSTANTS SECTION //
 ///////////////////////
-const API_URL = "http://localhost:8000"
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://backend-587575638625.europe-west1.run.app"
 
 ///////////////////////
 // API CALLS SECTION //

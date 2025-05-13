@@ -182,3 +182,31 @@ The user is prompted to confirm the deletion, ensuring that accidental deletions
     - Perform a high volume of crud operations
     - Go to ```/dashboard``` and see the monitored user and their logs
     - In the backend console you can see the message "We have a suspicious user: user_id"
+
+### Assignment 7: Deployment
+- Bronze
+  - Added Dockerfile for backend
+  - Added .env file with sensitive information
+  - Added debug security settings
+  - Modified settings to use environment variables
+  - Ran ```docker build -t gcr.io/ubb-mpp/backend .``` to build image and then ```docker push gcr.io/ubb-mpp/backend``` to push to container registry and then ```gcloud run deploy backend --image gcr.io/ubb-mpp/backend --platform managed --region europe-west1 --allow-unauthenticated --set-env-vars="SECRET_KEY='django-insecure&m&h=3n9*^+gco0zd4\$8j2&oa0^^)w+efuh!v488r-mytixwi67',DEBUG=0,ALLOWED_HOSTS=*.run.app" --cpu=1 --memory=512Mi --min-instances=0 --max-instances=1``` to deploy
+  - Backend successfully deployed at ```https://backend-587575638625.europe-west1.run.app```
+- Silver
+  - Added Dockerfile for Next.js frontend
+  - Added .env file with sensitive information
+  - Modified config file to use environment variables
+  - Ran ```cd frontend ``` and then ```docker build -t gcr.io/ubb-mpp/frontend .``` to build and then ```docker push gcr.io/ubb-mpp/frontend``` to publish the image and finally ```gcloud run deploy frontend --image gcr.io/ubb-mpp/frontend --platform managed --region europe-west1 --allow-unauthenticated --set-env-vars="NEXT_PUBLIC_API_URL=https://backend-587575638625.europe-west1.run.app" --cpu=1 --memory=512Mi --min-instances=0 --max-instances=1``` to deploy
+  - Modified backend CORS and CSRF allowed lists to include the new backend/frontend
+  - Frontend successfully deployed at ```https://frontend-587575638625.europe-west1.run.app```
+- Gold
+  - Created a DockerCompose file to orchestrate the backend, frontend dockerfiles and the sqlite3 database volume
+  - Added a cloudbuild.yaml file to lay out the steps for building and pushing both backend and frontend docker images
+  - Added a deploy shell to build and deploy the entire app on Google Cloud on Cloud Run (equivalent to Amazon ECS)
+
+### Assignment 8
+- Bronze
+  - Both backend and frontend were automatically assigned SSL certificates by Google Cloud Provider upon deployment
+- Silver
+  - Authentication was implemented and described thoroughly in Assignment6 (see above) - using JWT and localStorage 
+- Gold
+  - Not implemented :(

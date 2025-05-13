@@ -1,14 +1,12 @@
-"use client";
+"use client"
 
-/////////////////////
-// IMPORTS SECTION //
-/////////////////////
-import React, {use, useEffect, useState} from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import type React from "react"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Dialog,
   DialogContent,
@@ -16,31 +14,29 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { fetchBookingById, updateBookingApi, deleteBookingApi } from "@/utils/api/bookings-api";
-import { AlertCircle, Loader2 } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import type { Booking } from "@/utils/types/bookings-type";
-import NetworkStatusNotificationBar from "@/components/StatusNotificationBar";
-import {isOnline, updateServerStatus} from "@/utils/api/health-reporting-api";
+} from "@/components/ui/dialog"
+import { fetchBookingById, updateBookingApi, deleteBookingApi } from "@/utils/api/bookings-api"
+import { AlertCircle, Loader2 } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import Header from "@/components/Header"
+import Footer from "@/components/Footer"
+import type { Booking } from "@/utils/types/bookings-type"
+import NetworkStatusNotificationBar from "@/components/StatusNotificationBar"
+import { isOnline, updateServerStatus } from "@/utils/api/health-reporting-api"
 
+interface EditBookingFormProps {
+  bookingId: string
+}
 
-//////////////////////////
-// COMPONENT DEFINITION //
-//////////////////////////
-export default function EditBookingPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
-
+function EditBookingForm({ bookingId }: EditBookingFormProps) {
   // CONSTANTS SECTION //
-  const resolvedParams = use(params);
-  const router = useRouter();
-  const [booking, setBooking] = useState<Booking | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const router = useRouter()
+  const [booking, setBooking] = useState<Booking | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     customerName: "",
     customerEmail: "",
@@ -48,15 +44,14 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
     startDate: "",
     endDate: "",
     state: "PENDING",
-  });
-
+  })
 
   // HOOKS //
   useEffect(() => {
     const fetchBooking = async () => {
       try {
-        const data = await fetchBookingById(resolvedParams.id);
-        setBooking(data);
+        const data = await fetchBookingById(bookingId)
+        setBooking(data)
         setFormData({
           customerName: data.customerName,
           customerEmail: data.customerEmail,
@@ -64,75 +59,73 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
           startDate: data.startDate,
           endDate: data.endDate,
           state: data.state,
-        });
+        })
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load booking");
+        setError(err instanceof Error ? err.message : "Failed to load booking")
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
-    };
-    fetchBooking();
-  }, [resolvedParams.id]);
+    }
+    fetchBooking()
+  }, [bookingId])
 
   useEffect(() => {
     const checkServer = async () => {
-      const online = isOnline();
-      updateServerStatus(!online);
+      const online = isOnline()
+      updateServerStatus(!online)
 
-      window.dispatchEvent(new CustomEvent("serverStatusChange", { detail: { serverDown: !online } }));
-    };
+      window.dispatchEvent(new CustomEvent("serverStatusChange", { detail: { serverDown: !online } }))
+    }
 
     // Check every 5 seconds
-    const interval = setInterval(checkServer, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
+    const interval = setInterval(checkServer, 5000)
+    return () => clearInterval(interval)
+  }, [])
 
   // HANDLERS //
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
 
   const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!booking) return;
+    e.preventDefault()
+    if (!booking) return
 
-    setIsSaving(true);
-    setError(null);
+    setIsSaving(true)
+    setError(null)
 
     if (formData.startDate && formData.endDate && formData.startDate > formData.endDate) {
-      setError("Start date must be before the end date.");
-      setIsSaving(false);
-      return;
+      setError("Start date must be before the end date.")
+      setIsSaving(false)
+      return
     }
 
     try {
-      await updateBookingApi(booking.id, formData);
-      router.push("/bookings");
+      await updateBookingApi(booking.id, formData)
+      router.push("/bookings")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update booking");
+      setError(err instanceof Error ? err.message : "Failed to update booking")
     } finally {
-      setIsSaving(false);
+      setIsSaving(false)
     }
-  };
+  }
 
   const handleDelete = async () => {
-    if (!booking) return;
+    if (!booking) return
 
-    setIsDeleting(true);
-    setError(null);
+    setIsDeleting(true)
+    setError(null)
 
     try {
-      await deleteBookingApi(booking.id);
-      setIsDeleteDialogOpen(false);
-      router.push("/bookings");
+      await deleteBookingApi(booking.id)
+      setIsDeleteDialogOpen(false)
+      router.push("/bookings")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete booking");
-      setIsDeleting(false);
+      setError(err instanceof Error ? err.message : "Failed to delete booking")
+      setIsDeleting(false)
     }
-  };
-
+  }
 
   // JSX SECTION //
   /// PLACEHOLDER CONTENT ///
@@ -144,7 +137,7 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
           <span>Loading booking details...</span>
         </div>
       </div>
-    );
+    )
   }
 
   /// ERROR HANDLING CONTENT ///
@@ -160,13 +153,13 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
           <Button className="mt-4">Back to Bookings</Button>
         </Link>
       </div>
-    );
+    )
   }
 
   /// ACTUAL CONTENT ///
   return (
     <div>
-      <NetworkStatusNotificationBar/>
+      <NetworkStatusNotificationBar />
       <Header />
       <div className="container mx-auto py-8 px-4">
         <div className="flex justify-center mb-4">
@@ -316,5 +309,9 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
       </div>
       <Footer />
     </div>
-  );
+  )
+}
+
+export default function EditBookingPage({ params }: { params: { id: string } }) {
+  return <EditBookingForm bookingId={params.id} />
 }

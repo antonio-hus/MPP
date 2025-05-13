@@ -16,7 +16,6 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import NetworkStatusNotificationBar from "@/components/StatusNotificationBar";
-import useBookingUpdates from "@/utils/sockets/web-socket";
 import {isOnline, updateServerStatus} from "@/utils/api/health-reporting-api";
 import {syncLocalHotels} from "@/utils/api/hotels-api";
 import {syncLocalRooms} from "@/utils/api/rooms-api";
@@ -47,20 +46,6 @@ export default function BookingsOverview() {
   const loader = useRef<HTMLDivElement>(null);
   const ITEMS_LIMIT = 10;
   const initialLoadDone = useRef(false);
-
-  // Stable callback for WebSocket updates
-  const bookingUpdateHandler = useCallback((newBooking: Booking) => {
-    setBookings((prevBookings) => {
-      // Check if the booking already exists
-      const exists = prevBookings.find((b) => b.id === newBooking.id);
-      if (exists) {
-        // Update the existing booking
-        return prevBookings.map((b) => (b.id === newBooking.id ? newBooking : b));
-      }
-      // Add the new booking to the beginning of the list
-      return [newBooking, ...prevBookings];
-    });
-  }, []);
 
   // Use the WebSocket hook with the stable callback
   // const { isConnected } = useBookingUpdates(bookingUpdateHandler);

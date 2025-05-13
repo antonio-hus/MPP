@@ -6,7 +6,7 @@ import Link from "next/link"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { LogIn, UserPlus } from "lucide-react"
-import Header from "@/components/header"
+import Header from "@/components/Header"
 import Footer from "@/components/Footer"
 import { useAuth } from "@/components/AuthProvider"
 

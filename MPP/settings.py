@@ -3,18 +3,20 @@
 ###################
 import os
 from pathlib import Path
+from corsheaders.defaults import default_headers
 
 ##################
 # BASE DIRECTORY #
 ##################
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
 #####################
 # SECURITY SETTINGS #
 #####################
-SECRET_KEY = "django-insecure-m&h=3n9*^+gco0zd4$8j2&oa0^^)w+efuh!v488r-mytixwi67"
-DEBUG = True
-ALLOWED_HOSTS = []
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-m&h=3n9*^+gco0zd4$8j2&oa0^^)w+efuh!v488r-mytixwi67')
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+ALLOWED_HOSTS = ['*']
 
 ################
 # APPLICATIONS #
@@ -133,7 +135,8 @@ USE_TZ = True
 ################
 # STATIC FILES #
 ################
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
@@ -141,6 +144,31 @@ MEDIA_URL = '/media/'
 # CORS AND CSRF SETTINGS #
 ##########################
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'HEAD',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+CORS_EXPOSE_HEADERS = [
+    'content-disposition',
+]
+CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'https://backend-587575638625.europe-west1.run.app', 'https://frontend-587575638625.europe-west1.run.app']
 
 ##########################
 # USER MONITORING CONFIG #

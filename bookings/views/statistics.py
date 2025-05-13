@@ -4,8 +4,9 @@
 # Django Libraries
 from django.db.models import Sum, Avg, Count, Min, Max
 # Django Rest Framework Libraries
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 # Project Libraries
 from bookings.models import Hotel, Room
 
@@ -14,6 +15,7 @@ from bookings.models import Hotel, Room
 # VIEWS SECTION #
 #################
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def high_end_hotels_stats_view(request):
     """
     Returns hotels whose average room price is above the global average.

@@ -22,7 +22,7 @@ import { fetchRoomById, updateRoomApi, deleteRoomApi } from "@/utils/api/rooms-a
 import { fetchHotels } from "@/utils/api/hotels-api"
 import { AlertCircle, Loader2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import Header from "@/components/header"
+import Header from "@/components/Header"
 import Footer from "@/components/Footer"
 import type { Room } from "@/utils/types/rooms-type"
 import type { Hotel } from "@/utils/types/hotels-type"
