@@ -1,6 +1,12 @@
 ###################
 # IMPORTS SECTION #
 ###################
+# Django Libraries
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from django.urls import reverse
+from django.conf import settings
+from django.contrib.auth import get_user_model
 # Django Rest Framework Libraries
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.views import APIView
@@ -24,14 +30,62 @@ class RegisterView(APIView):
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
-            token, _ = Token.objects.get_or_create(user=user)
+        try:
+            if serializer.is_valid():
+                user = serializer.save()
+                user.is_active = False
+                user.save()
+
+                token = default_token_generator.make_token(user)
+                verification_url = request.build_absolute_uri(
+                   settings.FRONTEND_URL + f'auth/verify-email?uid={user.pk}&token={token}'
+                )
+
+                try:
+                    send_mail(
+                        subject='Verify your email',
+                        message=f'Click the link to verify your email: {verification_url}',
+                        from_email=f'UBB-MPP <{settings.EMAIL_HOST_USER}>',
+                        recipient_list=[user.email],
+                        fail_silently=False
+                    )
+                except Exception as email_error:
+                    print(f"Email error: {email_error}")
+                    return Response({
+                        'detail': 'User registered but email verification failed. Please contact support.',
+                        'error': str(email_error)
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+                return Response({'detail': 'Verification email sent'}, status=status.HTTP_201_CREATED)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(f"Registration error: {e}")
             return Response({
-                'token': token.key,
-                'userRole': user.role
-            })
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                'error': 'Server error during registration',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def verify_email(request):
+
+    User = get_user_model()
+    uid = request.GET.get('uid')
+    token = request.GET.get('token')
+
+    try:
+        user = User.objects.get(pk=uid)
+    except User.DoesNotExist:
+        return Response({'error': 'Invalid user'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if default_token_generator.check_token(user, token):
+        user.is_active = True
+        user.save()
+        return Response({'detail': 'Email verified successfully!'}, status=status.HTTP_200_OK)
+    else:
+        return Response({'error': 'Invalid or expired token'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class LoginView(APIView):
@@ -46,7 +100,7 @@ class LoginView(APIView):
                 'token': token.key,
                 'userRole': user.role
             })
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
 

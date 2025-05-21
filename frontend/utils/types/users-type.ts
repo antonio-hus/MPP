@@ -31,3 +31,7 @@ export interface AuthResponse {
   token: string
   userRole: string
 }
+
+export interface RegisterResponse {
+  detail: string
+}

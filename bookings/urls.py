@@ -12,6 +12,7 @@ urlpatterns = [
 
     # Authentication related URL Paths
     path('register/', views.RegisterView.as_view(), name='register'),
+    path('verify-email/', views.verify_email, name='verify_email'),
     path('login/', views.LoginView.as_view(), name='login'),
 
     # Admin related URL Paths

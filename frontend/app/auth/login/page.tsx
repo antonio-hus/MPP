@@ -3,14 +3,14 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle, Loader2 } from "lucide-react"
+import { AlertCircle, CheckCircle, Loader2 } from "lucide-react"
 import { handleLogin } from "@/utils/api/users-api"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
@@ -19,6 +19,7 @@ import { useAuth } from "@/components/AuthProvider"
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { isLoggedIn, loading } = useAuth()
   const [formData, setFormData] = useState<LoginPayload>({
     username: "",
@@ -26,6 +27,15 @@ export default function LoginPage() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+
+  // Check for verification success message
+  useEffect(() => {
+    const verified = searchParams.get("verified")
+    if (verified === "true") {
+      setSuccess("Email verification successful! You can now log in.")
+    }
+  }, [searchParams])
 
   // Redirect if already logged in
   useEffect(() => {
@@ -46,13 +56,20 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
     setError(null)
+    setSuccess(null)
 
     try {
       await handleLogin(formData)
       // Force a reload to update auth state
       window.location.href = "/"
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed. Please try again.")
+      const errorMessage = err instanceof Error ? err.message : "Login failed. Please try again."
+      // Check if the error is related to email verification
+      if (errorMessage.toLowerCase().includes("verify") || errorMessage.toLowerCase().includes("verification")) {
+        setError(`${errorMessage} Please check your email for the verification link.`)
+      } else {
+        setError(errorMessage)
+      }
     } finally {
       setIsLoading(false)
     }
@@ -90,6 +107,14 @@ export default function LoginPage() {
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Error</AlertTitle>
                   <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {success && (
+                <Alert className="mb-4 bg-green-50 border-green-200">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <AlertTitle className="text-green-700">Success</AlertTitle>
+                  <AlertDescription className="text-green-600">{success}</AlertDescription>
                 </Alert>
               )}
 

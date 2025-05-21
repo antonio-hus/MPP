@@ -6,7 +6,7 @@
 ///////////////////////
 // CONSTANTS SECTION //
 ///////////////////////
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://backend-587575638625.europe-west1.run.app"
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 
 //////////////////////////////

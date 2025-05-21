@@ -30,7 +30,15 @@ class LoginSerializer(serializers.Serializer):
     def validate(self, data):
         user = authenticate(**data)
         if not user:
-            raise serializers.ValidationError("Invalid credentials")
+            raise serializers.ValidationError({
+                'non_field_errors': ['Invalid username or password']
+            })
+
+        if not user.is_active:
+            raise serializers.ValidationError({
+                'non_field_errors': ['Email verification must be completed']
+            })
+
         return user
 
 

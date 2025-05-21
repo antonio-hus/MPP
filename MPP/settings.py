@@ -52,9 +52,20 @@ MIDDLEWARE = [
 ##########################
 # URLS AND WSGI AND ASGI #
 ##########################
+BACKEND_URL = "http://localhost:8000/"
+FRONTEND_URL = "http://localhost:3000/"
 ROOT_URLCONF = "MPP.urls"
 WSGI_APPLICATION = "MPP.wsgi.application"
 ASGI_APPLICATION = "MPP.asgi.application"
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'mail.meetime.ro'
+EMAIL_PORT = 465
+EMAIL_USE_SSL = True
+EMAIL_USE_TLS = False
+EMAIL_HOST_USER = 'booking@meetime.ro'
+EMAIL_HOST_PASSWORD = "22Lucianantonio*"
 
 
 #################

@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle, Loader2 } from "lucide-react"
+import { AlertCircle, CheckCircle, Loader2 } from "lucide-react"
 import { handleSignup } from "@/utils/api/users-api"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
@@ -29,6 +29,7 @@ export default function RegisterPage() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   // Redirect if already logged in
   useEffect(() => {
@@ -56,11 +57,18 @@ export default function RegisterPage() {
     e.preventDefault()
     setIsLoading(true)
     setError(null)
+    setSuccess(null)
 
     try {
-      await handleSignup(formData)
-      // Force a reload to update auth state
-      window.location.href = "/"
+      const message = await handleSignup(formData)
+      setSuccess("Registration successful! Please check your email to verify your account.")
+      // Clear form data
+      setFormData({
+        username: "",
+        email: "",
+        password: "",
+        role: "user",
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed. Please try again.")
     } finally {
@@ -103,78 +111,96 @@ export default function RegisterPage() {
                 </Alert>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    id="username"
-                    name="username"
-                    type="text"
-                    placeholder="Enter your username"
-                    value={formData.username}
-                    onChange={handleChange}
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
+              {success && (
+                <Alert className="mb-4 bg-green-50 border-green-200">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <AlertTitle className="text-green-700">Success</AlertTitle>
+                  <AlertDescription className="text-green-600">{success}</AlertDescription>
+                </Alert>
+              )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
+              {!success ? (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      name="username"
+                      type="text"
+                      placeholder="Enter your username"
+                      value={formData.username}
+                      onChange={handleChange}
+                      required
+                      disabled={isLoading}
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    placeholder="Create a password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                    disabled={isLoading}
-                  />
-                  <p className="text-xs text-muted-foreground">Password must be at least 8 characters long</p>
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="Enter your email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
+                      disabled={isLoading}
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Select
-                    value={formData.role}
-                    onValueChange={(value) => handleRoleChange(value as "user" | "admin")}
-                    disabled={isLoading}
-                  >
-                    <SelectTrigger id="role">
-                      <SelectValue placeholder="Select your role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      name="password"
+                      type="password"
+                      placeholder="Create a password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      required
+                      disabled={isLoading}
+                    />
+                    <p className="text-xs text-muted-foreground">Password must be at least 8 characters long</p>
+                  </div>
 
-                <Button type="submit" className="w-full bg-[#FF9800] hover:bg-[#F57C00]" disabled={isLoading}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating account...
-                    </>
-                  ) : (
-                    "Register"
-                  )}
-                </Button>
-              </form>
+                  <div className="space-y-2">
+                    <Label htmlFor="role">Role</Label>
+                    <Select
+                      value={formData.role}
+                      onValueChange={(value) => handleRoleChange(value as "user" | "admin")}
+                      disabled={isLoading}
+                    >
+                      <SelectTrigger id="role">
+                        <SelectValue placeholder="Select your role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="user">User</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Button type="submit" className="w-full bg-[#FF9800] hover:bg-[#F57C00]" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating account...
+                      </>
+                    ) : (
+                      "Register"
+                    )}
+                  </Button>
+                </form>
+              ) : (
+                <div className="text-center py-4">
+                  <Link href="/auth/login">
+                    <Button variant="outline" className="mt-4">
+                      Go to Login
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
               <div className="text-sm text-center text-muted-foreground">

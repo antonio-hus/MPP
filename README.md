@@ -195,6 +195,7 @@ The user is prompted to confirm the deletion, ensuring that accidental deletions
   - Added Dockerfile for Next.js frontend
   - Added .env file with sensitive information
   - Modified config file to use environment variables
+  - Replaced backend url everywhere in frontend
   - Ran ```cd frontend ``` and then ```docker build -t gcr.io/ubb-mpp/frontend .``` to build and then ```docker push gcr.io/ubb-mpp/frontend``` to publish the image and finally ```gcloud run deploy frontend --image gcr.io/ubb-mpp/frontend --platform managed --region europe-west1 --allow-unauthenticated --set-env-vars="NEXT_PUBLIC_API_URL=https://backend-587575638625.europe-west1.run.app" --cpu=1 --memory=512Mi --min-instances=0 --max-instances=1``` to deploy
   - Modified backend CORS and CSRF allowed lists to include the new backend/frontend
   - Frontend successfully deployed at ```https://frontend-587575638625.europe-west1.run.app```
@@ -202,6 +203,7 @@ The user is prompted to confirm the deletion, ensuring that accidental deletions
   - Created a DockerCompose file to orchestrate the backend, frontend dockerfiles and the sqlite3 database volume
   - Added a cloudbuild.yaml file to lay out the steps for building and pushing both backend and frontend docker images
   - Added a deploy shell to build and deploy the entire app on Google Cloud on Cloud Run (equivalent to Amazon ECS)
+  - Run it using ```./deploy.sh```
 
 ### Assignment 8
 - Bronze
@@ -209,4 +211,7 @@ The user is prompted to confirm the deletion, ensuring that accidental deletions
 - Silver
   - Authentication was implemented and described thoroughly in Assignment6 (see above) - using JWT and localStorage 
 - Gold
-  - Not implemented :(
+  - Added 2FA email verification
+  - When a user tries to register, his account is set to inactive by default
+  - An email gets sent to his registered email, with his unique user id and a token generated, lasting for 3 days
+  - He clicks verify and is redirected to login, in the backend the account is set active.
